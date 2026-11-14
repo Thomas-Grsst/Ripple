@@ -5,7 +5,7 @@ import '../../../../technical/Theme/ripple_colors.dart';
 import '../../../../technical/Theme/ripple_theme.dart';
 import '../../domain/entities/launcher_entry.dart';
 
-enum AppAction { toggleHome, toggleFavorite, addToGroup, rename, hide, appInfo, uninstall }
+enum AppAction { toggleFavorite, addToGroup, rename, hide, appInfo, uninstall }
 
 Future<AppAction?> showAppActionsSheet(BuildContext context, LauncherEntry entry) {
   return showModalBottomSheet<AppAction>(
@@ -39,12 +39,6 @@ class _AppActionsSheet extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-          _ActionTile(
-            icon: entry.isOnHome ? Icons.home_rounded : Icons.add_home_outlined,
-            label: entry.isOnHome ? RippleStrings.removeFromHome : RippleStrings.addToHome,
-            action: AppAction.toggleHome,
-            highlighted: entry.isOnHome,
           ),
           _ActionTile(
             icon: entry.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,

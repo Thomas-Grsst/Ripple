@@ -11,10 +11,7 @@ class LauncherEntry extends Equatable {
     required this.notificationCount,
     required this.isFavorite,
     required this.isHidden,
-    this.isOnHome = false,
   });
-
-  final bool isOnHome;
 
   final InstalledApp app;
   final String displayName;
@@ -27,5 +24,5 @@ class LauncherEntry extends Equatable {
   String get packageName => app.packageName;
 
   @override
-  List<Object?> get props => <Object?>[app, displayName, letter, notificationCount, isFavorite, isHidden, isOnHome];
+  List<Object?> get props => <Object?>[app, displayName, letter, notificationCount, isFavorite, isHidden];
 }

@@ -41,7 +41,13 @@ class DeviceLauncherGateway implements LauncherDeviceGateway {
     if (packageName is! String || label is! String || icon is! Uint8List) {
       return null;
     }
-    return InstalledApp(packageName: packageName, label: label, icon: icon);
+    final Object? monochrome = raw['monochrome'];
+    return InstalledApp(
+      packageName: packageName,
+      label: label,
+      icon: icon,
+      monochromeIcon: monochrome is Uint8List ? monochrome : null,
+    );
   }
 
   LauncherDeviceEvent? _toLauncherEvent(DeviceEvent event) {

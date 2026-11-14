@@ -17,8 +17,6 @@ class LauncherCatalog extends Equatable {
   const LauncherCatalog({
     this.favorites = const <LauncherEntry>[],
     this.groups = const <LauncherGroup>[],
-    this.home = const <LauncherEntry>[],
-    this.homeLetterIndex = const <String, int>{},
     this.visible = const <LauncherEntry>[],
     this.hidden = const <LauncherEntry>[],
     this.letterIndex = const <String, int>{},
@@ -26,18 +24,31 @@ class LauncherCatalog extends Equatable {
 
   final List<LauncherEntry> favorites;
   final List<LauncherGroup> groups;
-  final List<LauncherEntry> home;
-  final Map<String, int> homeLetterIndex;
   final List<LauncherEntry> visible;
   final List<LauncherEntry> hidden;
   final Map<String, int> letterIndex;
 
   List<String> get letters => letterIndex.keys.toList(growable: false);
 
-  List<String> get homeLetters => homeLetterIndex.keys.toList(growable: false);
+  bool get isHomeEmpty => favorites.isEmpty && groups.isEmpty;
 
-  bool get isHomeEmpty => favorites.isEmpty && groups.isEmpty && home.isEmpty;
+  List<LauncherEntry> entriesForLetter(String letter) {
+    final int? start = letterIndex[letter];
+    if (start == null) {
+      return const <LauncherEntry>[];
+    }
+    return visible.skip(start).takeWhile((LauncherEntry entry) => entry.letter == letter).toList(growable: false);
+  }
+
+  LauncherGroup? groupById(String groupId) {
+    for (final LauncherGroup group in groups) {
+      if (group.group.id == groupId) {
+        return group;
+      }
+    }
+    return null;
+  }
 
   @override
-  List<Object?> get props => <Object?>[favorites, groups, home, homeLetterIndex, visible, hidden, letterIndex];
+  List<Object?> get props => <Object?>[favorites, groups, visible, hidden, letterIndex];
 }

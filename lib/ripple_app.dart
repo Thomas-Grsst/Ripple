@@ -14,6 +14,7 @@ import 'layers/functional/Glance/presentation/cubit/weather_cubit.dart';
 import 'layers/functional/Glance/presentation/widgets/glance_header.dart';
 import 'layers/functional/Settings/presentation/cubit/settings_cubit.dart';
 import 'layers/functional/Settings/presentation/views/settings_view.dart';
+import 'layers/technical/AppIcons/app_icon_style.dart';
 import 'layers/technical/Localization/ripple_strings.dart';
 import 'layers/technical/Theme/ripple_theme.dart';
 import 'layers/technical/Wallpapers/ripple_wallpaper.dart';
@@ -69,14 +70,14 @@ class RippleApp extends StatelessWidget {
 class _RippleHome extends StatelessWidget {
   const _RippleHome();
 
-  void _openAllApps(BuildContext context, bool showIcons) {
+  void _openAllApps(BuildContext context, AppIconStyle iconStyle) {
     Navigator.of(context).push(
       PageRouteBuilder<void>(
         opaque: false,
         transitionDuration: const Duration(milliseconds: 280),
         reverseTransitionDuration: const Duration(milliseconds: 220),
         pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) =>
-            AllAppsView(showIcons: showIcons),
+            AllAppsView(iconStyle: iconStyle),
         transitionsBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
           final Animation<double> curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
           return FadeTransition(
@@ -122,18 +123,22 @@ class _RippleHome extends StatelessWidget {
     return BlocBuilder<SettingsCubit, SettingsState>(
       buildWhen: (SettingsState previous, SettingsState current) =>
           previous.settings.wallpaperId != current.settings.wallpaperId ||
-          previous.settings.showIcons != current.settings.showIcons,
+          previous.settings.photoPath != current.settings.photoPath ||
+          previous.settings.iconStyleId != current.settings.iconStyleId,
       builder: (BuildContext context, SettingsState state) {
-        final bool showIcons = state.settings.showIcons;
+        final AppIconStyle iconStyle = AppIconStyle.fromId(state.settings.iconStyleId);
         return Stack(
           fit: StackFit.expand,
           children: <Widget>[
-            WallpaperBackground(wallpaper: RippleWallpaper.fromId(state.settings.wallpaperId)),
+            WallpaperBackground(
+              wallpaper: RippleWallpaper.fromId(state.settings.wallpaperId),
+              photoPath: state.settings.photoPath,
+            ),
             HomeView(
               header: const GlanceHeader(),
-              showIcons: showIcons,
+              iconStyle: iconStyle,
               onOpenSettings: () => _openSettings(context),
-              onOpenAllApps: () => _openAllApps(context, showIcons),
+              onOpenAllApps: () => _openAllApps(context, iconStyle),
               onEditGroupApps: (AppGroup group) => _openGroupEditor(context, group),
             ),
           ],

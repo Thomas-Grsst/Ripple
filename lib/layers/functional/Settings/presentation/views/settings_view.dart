@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../technical/AppIcons/app_icon_style.dart';
 import '../../../../technical/Localization/ripple_strings.dart';
 import '../../../../technical/Theme/ripple_colors.dart';
 import '../../../../technical/Theme/ripple_theme.dart';
@@ -38,6 +39,33 @@ class _SettingsViewState extends State<SettingsView> {
   void dispose() {
     _lifecycleListener.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickIconStyle(BuildContext context, AppIconStyle current) async {
+    final SettingsCubit cubit = context.read<SettingsCubit>();
+    final AppIconStyle? picked = await showModalBottomSheet<AppIconStyle>(
+      context: context,
+      builder: (BuildContext context) => SafeArea(
+        child: RadioGroup<AppIconStyle>(
+          groupValue: current,
+          onChanged: (AppIconStyle? style) => Navigator.of(context).pop(style),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              for (final AppIconStyle style in AppIconStyle.values)
+                RadioListTile<AppIconStyle>(
+                  value: style,
+                  activeColor: RippleColors.accent,
+                  title: Text(style.label),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked != null) {
+      await cubit.setIconStyle(picked.id);
+    }
   }
 
   Future<void> _editCity(BuildContext context, String currentCity) async {
@@ -94,11 +122,12 @@ class _SettingsViewState extends State<SettingsView> {
                   MaterialPageRoute<void>(builder: (_) => const WallpaperPickerView()),
                 ),
               ),
-              SwitchListTile(
-                secondary: const Icon(Icons.apps_rounded),
-                title: const Text(RippleStrings.showIcons),
-                value: state.settings.showIcons,
-                onChanged: cubit.setShowIcons,
+              ListTile(
+                leading: const Icon(Icons.apps_rounded),
+                title: const Text(RippleStrings.iconStyle),
+                subtitle: Text(AppIconStyle.fromId(state.settings.iconStyleId).label),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => _pickIconStyle(context, AppIconStyle.fromId(state.settings.iconStyleId)),
               ),
               ListTile(
                 leading: const Icon(Icons.wb_cloudy_outlined),

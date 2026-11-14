@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/launcher_settings.dart';
@@ -28,6 +29,8 @@ class SettingsState extends Equatable {
 }
 
 class SettingsCubit extends Cubit<SettingsState> {
+  static const String _photoWallpaperId = 'photo';
+
   SettingsCubit({
     required this._loadLauncherSettings,
     required this._saveLauncherSettings,
@@ -36,6 +39,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     required this._openNotificationAccess,
     required this._openRippleAppInfo,
     required this._openWallpaperPicker,
+    required this._pickWallpaperPhoto,
   })  : super(const SettingsState());
 
   final LoadLauncherSettings _loadLauncherSettings;
@@ -45,6 +49,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   final OpenNotificationAccess _openNotificationAccess;
   final OpenRippleAppInfo _openRippleAppInfo;
   final OpenWallpaperPicker _openWallpaperPicker;
+  final PickWallpaperPhoto _pickWallpaperPhoto;
 
   Future<void> start() async {
     final LauncherSettings settings = await _loadLauncherSettings();
@@ -58,7 +63,7 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   Future<void> setWallpaper(String wallpaperId) => _update(state.settings.copyWith(wallpaperId: wallpaperId));
 
-  Future<void> setShowIcons(bool value) => _update(state.settings.copyWith(showIcons: value));
+  Future<void> setIconStyle(String iconStyleId) => _update(state.settings.copyWith(iconStyleId: iconStyleId));
 
   Future<void> setWeatherCity(String city) => _update(state.settings.copyWith(weatherCity: city.trim()));
 
@@ -69,6 +74,17 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> openRippleAppInfo() => _openRippleAppInfo();
 
   Future<void> openWallpaperPicker() => _openWallpaperPicker();
+
+  Future<void> pickWallpaperPhoto() async {
+    try {
+      final String? path = await _pickWallpaperPhoto();
+      if (path != null) {
+        await _update(state.settings.copyWith(wallpaperId: _photoWallpaperId, photoPath: path));
+      }
+    } on PlatformException {
+      return;
+    }
+  }
 
   Future<void> _update(LauncherSettings settings) async {
     emit(state.copyWith(settings: settings));

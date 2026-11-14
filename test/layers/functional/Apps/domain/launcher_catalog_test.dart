@@ -136,25 +136,16 @@ void main() {
       expect(customization.deleteGroup('a').groups.single.id, 'b');
     });
 
-    test('apps added to the home are listed alphabetically with their own letter index', () {
-      final AppCustomization customization = const AppCustomization()
-          .toggleHome('com.maps')
-          .toggleHome('com.agenda')
-          .toggleHome('com.nine')
-          .toggleHome('com.music')
-          .hide('com.music');
-
+    test('entriesForLetter returns only the visible apps of that letter', () {
       final LauncherCatalog catalog = const BuildLauncherCatalog()(
         apps: apps,
-        customization: customization,
+        customization: const AppCustomization().hide('com.music'),
         notificationCounts: const <String, int>{},
       );
 
-      expect(catalog.home.map((LauncherEntry entry) => entry.packageName), <String>['com.agenda', 'com.maps', 'com.nine']);
-      expect(catalog.homeLetters, <String>['A', 'P', '#']);
-      expect(catalog.isHomeEmpty, isFalse);
-      expect(customization.isOnHome('com.music'), isFalse);
-      expect(customization.toggleHome('com.maps').isOnHome('com.maps'), isFalse);
+      expect(catalog.entriesForLetter('M').map((LauncherEntry entry) => entry.packageName), <String>['com.messages']);
+      expect(catalog.entriesForLetter('#').single.packageName, 'com.nine');
+      expect(catalog.entriesForLetter('Z'), isEmpty);
     });
 
     test('the home is empty without favorites or groups', () {

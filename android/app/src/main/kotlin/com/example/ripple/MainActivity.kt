@@ -10,6 +10,10 @@ import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
+import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
@@ -116,12 +120,29 @@ class MainActivity : FlutterActivity() {
             .filter { it.applicationInfo.packageName != packageName }
             .distinctBy { it.applicationInfo.packageName }
             .map { activity ->
-                mapOf(
+                val entry = mutableMapOf<String, Any>(
                     "package" to activity.applicationInfo.packageName,
                     "label" to activity.label.toString(),
                     "icon" to drawableToPng(activity.getBadgedIcon(0), iconSize),
                 )
+                monochromeToPng(activity.getIcon(0), iconSize)?.let { entry["monochrome"] = it }
+                entry
             }
+    }
+
+    private fun monochromeToPng(drawable: Drawable, size: Int): ByteArray? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || drawable !is AdaptiveIconDrawable) return null
+        val monochrome = drawable.monochrome?.mutate() ?: return null
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val inset = (size * 0.25f).toInt()
+        monochrome.setBounds(-inset, -inset, size + inset, size + inset)
+        monochrome.colorFilter = PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+        monochrome.draw(canvas)
+        val stream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        bitmap.recycle()
+        return stream.toByteArray()
     }
 
     private fun drawableToPng(drawable: Drawable, size: Int): ByteArray {

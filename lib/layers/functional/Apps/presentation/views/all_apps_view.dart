@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../technical/AppIcons/app_icon_style.dart';
 import '../../../../technical/Localization/ripple_strings.dart';
 import '../../../../technical/Theme/ripple_colors.dart';
 import '../../../../technical/Theme/ripple_theme.dart';
@@ -12,9 +13,9 @@ import '../widgets/app_row.dart';
 import '../widgets/entry_actions.dart';
 
 class AllAppsView extends StatefulWidget {
-  const AllAppsView({required this.showIcons, super.key});
+  const AllAppsView({required this.iconStyle, super.key});
 
-  final bool showIcons;
+  final AppIconStyle iconStyle;
 
   @override
   State<AllAppsView> createState() => _AllAppsViewState();
@@ -86,7 +87,7 @@ class _AllAppsViewState extends State<AllAppsView> {
                           return AppRow(
                             entry: entry,
                             size: AppRowSize.regular,
-                            showIcon: widget.showIcons,
+                            iconStyle: widget.iconStyle,
                             reserveLetterColumn: true,
                             leadingLetter: startsGroup ? entry.letter : null,
                             onTap: () => _launch(entry),

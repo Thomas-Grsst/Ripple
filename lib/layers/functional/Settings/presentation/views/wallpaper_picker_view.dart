@@ -32,8 +32,11 @@ class WallpaperPickerView extends StatelessWidget {
                     for (final RippleWallpaper wallpaper in RippleWallpaper.values)
                       _WallpaperTile(
                         wallpaper: wallpaper,
+                        photoPath: state.settings.photoPath,
                         isSelected: wallpaper == selected,
-                        onTap: () => context.read<SettingsCubit>().setWallpaper(wallpaper.id),
+                        onTap: wallpaper.usesPhoto
+                            ? context.read<SettingsCubit>().pickWallpaperPhoto
+                            : () => context.read<SettingsCubit>().setWallpaper(wallpaper.id),
                       ),
                   ],
                 ),
@@ -59,11 +62,22 @@ class WallpaperPickerView extends StatelessWidget {
 }
 
 class _WallpaperTile extends StatelessWidget {
-  const _WallpaperTile({required this.wallpaper, required this.isSelected, required this.onTap});
+  const _WallpaperTile({required this.wallpaper, required this.photoPath, required this.isSelected, required this.onTap});
 
   final RippleWallpaper wallpaper;
+  final String photoPath;
   final bool isSelected;
   final VoidCallback onTap;
+
+  Widget _buildPreview() {
+    if (wallpaper.usesSystemWallpaper) {
+      return const _IconPreview(Icons.wallpaper_rounded);
+    }
+    if (wallpaper.usesPhoto && photoPath.isEmpty) {
+      return const _IconPreview(Icons.add_photo_alternate_outlined);
+    }
+    return WallpaperBackground(wallpaper: wallpaper, photoPath: photoPath, withReadabilityScrim: false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +96,7 @@ class _WallpaperTile extends StatelessWidget {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(14),
-                child: wallpaper.usesSystemWallpaper ? const _SystemWallpaperPreview() : WallpaperBackground(wallpaper: wallpaper),
+                child: _buildPreview(),
               ),
             ),
           ),
@@ -100,14 +114,16 @@ class _WallpaperTile extends StatelessWidget {
   }
 }
 
-class _SystemWallpaperPreview extends StatelessWidget {
-  const _SystemWallpaperPreview();
+class _IconPreview extends StatelessWidget {
+  const _IconPreview(this.icon);
+
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
+    return ColoredBox(
       color: RippleColors.surfaceRaised,
-      child: Center(child: Icon(Icons.wallpaper_rounded, color: RippleColors.textSecondary, size: 32)),
+      child: Center(child: Icon(icon, color: RippleColors.textSecondary, size: 32)),
     );
   }
 }

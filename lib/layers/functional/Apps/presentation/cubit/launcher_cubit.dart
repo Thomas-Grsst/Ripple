@@ -65,15 +65,19 @@ class LauncherCubit extends Cubit<LauncherState> {
 
   void clearSearch() => search('');
 
+  void showFavorites() => emit(state.copyWith(homeFilter: const FavoritesFilter()));
+
+  void selectLetter(String letter) => emit(state.copyWith(homeFilter: LetterFilter(letter)));
+
+  void selectGroup(String groupId) => emit(state.copyWith(homeFilter: GroupFilter(groupId)));
+
   Future<void> launch(LauncherEntry entry) async {
     final bool launched = await _launchApp(entry.packageName);
     if (!launched) {
       emit(state.copyWith(launchFailures: state.launchFailures + 1));
       return;
     }
-    if (state.isSearching) {
-      clearSearch();
-    }
+    emit(state.copyWith(query: '', searchResults: const <LauncherEntry>[], homeFilter: const FavoritesFilter()));
   }
 
   Future<void> launchFirstResult() async {
@@ -88,8 +92,6 @@ class LauncherCubit extends Cubit<LauncherState> {
   Future<void> uninstall(LauncherEntry entry) => _uninstallApp(entry.packageName);
 
   Future<void> expandNotificationShade() => _expandNotificationShade();
-
-  Future<void> toggleHome(String packageName) => _updateCustomization(state.customization.toggleHome(packageName));
 
   Future<void> toggleFavorite(String packageName) => _updateCustomization(state.customization.toggleFavorite(packageName));
 
@@ -136,7 +138,12 @@ class LauncherCubit extends Cubit<LauncherState> {
   void _onDeviceEvent(LauncherDeviceEvent event) {
     switch (event) {
       case HomeRequested():
-        emit(state.copyWith(homeRequests: state.homeRequests + 1, query: '', searchResults: const <LauncherEntry>[]));
+        emit(state.copyWith(
+          homeRequests: state.homeRequests + 1,
+          query: '',
+          searchResults: const <LauncherEntry>[],
+          homeFilter: const FavoritesFilter(),
+        ));
       case InstalledAppsChanged():
         unawaited(reloadApps());
       case NotificationCountsUpdated(:final Map<String, int> counts):

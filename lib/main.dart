@@ -12,6 +12,7 @@ import 'layers/functional/Apps/presentation/cubit/launcher_cubit.dart';
 import 'layers/functional/Glance/data/open_meteo_weather_gateway.dart';
 import 'layers/functional/Glance/domain/weather_report.dart';
 import 'layers/functional/Glance/presentation/cubit/weather_cubit.dart';
+import 'layers/functional/Settings/data/local_wallpaper_photo_gateway.dart';
 import 'layers/functional/Settings/data/settings_gateways.dart';
 import 'layers/functional/Settings/domain/settings_use_cases.dart';
 import 'layers/functional/Settings/presentation/cubit/settings_cubit.dart';
@@ -53,6 +54,7 @@ Future<void> main() async {
     requestDefaultLauncher: RequestDefaultLauncher(integrationGateway),
     openNotificationAccess: OpenNotificationAccess(integrationGateway),
     openRippleAppInfo: OpenRippleAppInfo(integrationGateway),
+    pickWallpaperPhoto: const PickWallpaperPhoto(LocalWallpaperPhotoGateway()),
     openWallpaperPicker: OpenWallpaperPicker(integrationGateway),
   );
 

@@ -7,6 +7,35 @@ import '../../domain/entities/launcher_entry.dart';
 
 enum LauncherStatus { loading, ready, failure }
 
+sealed class HomeFilter extends Equatable {
+  const HomeFilter();
+
+  @override
+  List<Object?> get props => const <Object?>[];
+}
+
+final class FavoritesFilter extends HomeFilter {
+  const FavoritesFilter();
+}
+
+final class LetterFilter extends HomeFilter {
+  const LetterFilter(this.letter);
+
+  final String letter;
+
+  @override
+  List<Object?> get props => <Object?>[letter];
+}
+
+final class GroupFilter extends HomeFilter {
+  const GroupFilter(this.groupId);
+
+  final String groupId;
+
+  @override
+  List<Object?> get props => <Object?>[groupId];
+}
+
 class LauncherState extends Equatable {
   const LauncherState({
     this.status = LauncherStatus.loading,
@@ -18,6 +47,7 @@ class LauncherState extends Equatable {
     this.searchResults = const <LauncherEntry>[],
     this.homeRequests = 0,
     this.launchFailures = 0,
+    this.homeFilter = const FavoritesFilter(),
   });
 
   final LauncherStatus status;
@@ -29,6 +59,7 @@ class LauncherState extends Equatable {
   final List<LauncherEntry> searchResults;
   final int homeRequests;
   final int launchFailures;
+  final HomeFilter homeFilter;
 
   bool get isSearching => query.trim().isNotEmpty;
 
@@ -42,6 +73,7 @@ class LauncherState extends Equatable {
     List<LauncherEntry>? searchResults,
     int? homeRequests,
     int? launchFailures,
+    HomeFilter? homeFilter,
   }) {
     return LauncherState(
       status: status ?? this.status,
@@ -53,6 +85,7 @@ class LauncherState extends Equatable {
       searchResults: searchResults ?? this.searchResults,
       homeRequests: homeRequests ?? this.homeRequests,
       launchFailures: launchFailures ?? this.launchFailures,
+      homeFilter: homeFilter ?? this.homeFilter,
     );
   }
 
@@ -67,5 +100,6 @@ class LauncherState extends Equatable {
         searchResults,
         homeRequests,
         launchFailures,
+        homeFilter,
       ];
 }

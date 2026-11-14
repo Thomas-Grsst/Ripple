@@ -97,6 +97,33 @@ void main() {
     expect(customization.stored.groups.single.packages, <String>['com.agenda']);
   });
 
+  test('the home shows favorites by default, then a letter or a group when selected', () async {
+    expect(cubit.state.homeFilter, const FavoritesFilter());
+
+    cubit.selectLetter('P');
+    expect(cubit.state.homeFilter, const LetterFilter('P'));
+    expect(cubit.state.catalog.entriesForLetter('P').single.packageName, 'com.maps');
+
+    await cubit.createGroup('XEFI', packages: <String>['com.agenda']);
+    final String groupId = cubit.state.customization.groups.single.id;
+    cubit.selectGroup(groupId);
+    expect(cubit.state.homeFilter, GroupFilter(groupId));
+
+    cubit.showFavorites();
+    expect(cubit.state.homeFilter, const FavoritesFilter());
+  });
+
+  test('launching an app or pressing home brings the favorites back', () async {
+    cubit.selectLetter('A');
+    await cubit.launch(cubit.state.catalog.entriesForLetter('A').single);
+    expect(cubit.state.homeFilter, const FavoritesFilter());
+
+    cubit.selectLetter('P');
+    device.events.add(const HomeRequested());
+    await Future<void>.delayed(Duration.zero);
+    expect(cubit.state.homeFilter, const FavoritesFilter());
+  });
+
   test('a blank group name is ignored', () async {
     await cubit.createGroup('   ');
     expect(cubit.state.customization.groups, isEmpty);

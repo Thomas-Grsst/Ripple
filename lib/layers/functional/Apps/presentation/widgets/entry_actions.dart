@@ -14,8 +14,6 @@ Future<void> showEntryActions(BuildContext context, LauncherEntry entry) async {
     return;
   }
   switch (action) {
-    case AppAction.toggleHome:
-      await cubit.toggleHome(entry.packageName);
     case AppAction.toggleFavorite:
       await cubit.toggleFavorite(entry.packageName);
     case AppAction.addToGroup:

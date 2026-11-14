@@ -1,22 +1,24 @@
 import 'package:equatable/equatable.dart';
 
 class LauncherSettings extends Equatable {
-  const LauncherSettings({this.wallpaperId = 'black', this.showIcons = true, this.weatherCity = ''});
+  const LauncherSettings({this.wallpaperId = 'black', this.iconStyleId = 'monochrome', this.weatherCity = '', this.photoPath = ''});
 
   final String wallpaperId;
-  final bool showIcons;
+  final String iconStyleId;
   final String weatherCity;
+  final String photoPath;
 
-  LauncherSettings copyWith({String? wallpaperId, bool? showIcons, String? weatherCity}) {
+  LauncherSettings copyWith({String? wallpaperId, String? iconStyleId, String? weatherCity, String? photoPath}) {
     return LauncherSettings(
       wallpaperId: wallpaperId ?? this.wallpaperId,
-      showIcons: showIcons ?? this.showIcons,
+      iconStyleId: iconStyleId ?? this.iconStyleId,
       weatherCity: weatherCity ?? this.weatherCity,
+      photoPath: photoPath ?? this.photoPath,
     );
   }
 
   @override
-  List<Object?> get props => <Object?>[wallpaperId, showIcons, weatherCity];
+  List<Object?> get props => <Object?>[wallpaperId, iconStyleId, weatherCity, photoPath];
 }
 
 class SystemIntegrationStatus extends Equatable {
@@ -33,6 +35,10 @@ abstract interface class LauncherSettingsGateway {
   Future<LauncherSettings> load();
 
   Future<void> save(LauncherSettings settings);
+}
+
+abstract interface class WallpaperPhotoGateway {
+  Future<String?> pickAndStore();
 }
 
 abstract interface class SystemIntegrationGateway {

@@ -1,12 +1,13 @@
 enum RippleWallpaper {
-  black('black', 'Noir intégral'),
-  system('system', 'Fond du téléphone'),
-  ripple('ripple', 'Onde'),
-  aurora('aurora', 'Aurore'),
-  dunes('dunes', 'Dunes'),
-  tide('tide', 'Marée'),
+  peaks('peaks', 'Sommets'),
+  milkyWay('milkyway', 'Voie lactée'),
+  ocean('ocean', 'Océan'),
+  northernLights('northern', 'Aurore boréale'),
   dusk('dusk', 'Crépuscule'),
-  constellation('constellation', 'Constellation');
+  ripple('ripple', 'Onde'),
+  photo('photo', 'Ta photo'),
+  system('system', 'Fond du téléphone'),
+  black('black', 'Noir intégral');
 
   const RippleWallpaper(this.id, this.label);
 
@@ -14,6 +15,8 @@ enum RippleWallpaper {
   final String label;
 
   bool get usesSystemWallpaper => this == RippleWallpaper.system;
+
+  bool get usesPhoto => this == RippleWallpaper.photo;
 
   static RippleWallpaper fromId(String? id) {
     return RippleWallpaper.values.firstWhere(

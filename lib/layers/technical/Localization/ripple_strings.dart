@@ -9,12 +9,12 @@ abstract final class RippleStrings {
   static const String addFavoritesHint = 'Appui long sur une app pour l\'ajouter aux favoris';
 
   static const String favorites = 'Favoris';
+  static const String favoritesSymbol = '★';
+  static const String noFavoritesYet = 'Aucun favori. Fais glisser ton doigt sur l\'alphabet, puis appui long sur une app.';
+  static const String noAppsForLetter = 'Aucune app pour cette lettre';
   static const String emptyHomeTitle = 'Ton accueil est vide';
   static const String emptyHomeBody =
       'Ouvre « Toutes les apps », puis appui long sur une app pour l\'ajouter à l\'accueil, aux favoris ou à un groupe.';
-  static const String addToHome = 'Ajouter à l\'accueil';
-  static const String removeFromHome = 'Retirer de l\'accueil';
-  static const String homeApps = 'Apps';
   static const String openAllApps = 'Toutes les apps';
   static const String close = 'Fermer';
   static const String addToGroup = 'Ajouter à un groupe';
@@ -52,7 +52,7 @@ abstract final class RippleStrings {
   static const String showWallpaper = 'Afficher le fond d\'écran';
   static const String showWallpaperHint = 'Sinon, fond noir intégral';
   static const String changeWallpaper = 'Changer de fond d\'écran';
-  static const String showIcons = 'Afficher les icônes';
+  static const String iconStyle = 'Style des icônes';
   static const String weatherCity = 'Ville pour la météo';
   static const String weatherCityEmpty = 'Aucune — météo masquée';
   static const String weatherCityHint = 'Lyon';

@@ -38,13 +38,9 @@ class BuildLauncherCatalog {
         )
         .toList(growable: false);
 
-    final List<LauncherEntry> home = visible.where((LauncherEntry entry) => entry.isOnHome).toList(growable: false);
-
     return LauncherCatalog(
       favorites: favorites,
       groups: groups,
-      home: home,
-      homeLetterIndex: _indexLetters(home),
       visible: visible,
       hidden: hidden,
       letterIndex: _indexLetters(visible),
@@ -62,7 +58,6 @@ class BuildLauncherCatalog {
       notificationCount: notificationCounts[app.packageName] ?? 0,
       isFavorite: customization.isFavorite(app.packageName),
       isHidden: customization.isHidden(app.packageName),
-      isOnHome: customization.isOnHome(app.packageName),
     );
   }
 

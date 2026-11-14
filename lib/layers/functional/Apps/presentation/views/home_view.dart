@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../technical/AppIcons/app_icon_style.dart';
 import '../../../../technical/Localization/ripple_strings.dart';
 import '../../../../technical/Theme/ripple_colors.dart';
 import '../../../../technical/Theme/ripple_theme.dart';
@@ -14,13 +15,14 @@ import '../widgets/app_row.dart';
 import '../widgets/entry_actions.dart';
 import '../widgets/entry_list.dart';
 import '../widgets/group_actions_sheet.dart';
-import '../widgets/group_section.dart';
+import '../widgets/home_filter_bar.dart';
+import '../widgets/rename_dialog.dart';
 import '../widgets/search_bar_row.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({
     required this.header,
-    required this.showIcons,
+    required this.iconStyle,
     required this.onOpenSettings,
     required this.onOpenAllApps,
     required this.onEditGroupApps,
@@ -28,7 +30,7 @@ class HomeView extends StatefulWidget {
   });
 
   final Widget header;
-  final bool showIcons;
+  final AppIconStyle iconStyle;
   final VoidCallback onOpenSettings;
   final VoidCallback onOpenAllApps;
   final ValueChanged<AppGroup> onEditGroupApps;
@@ -39,11 +41,11 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   static const double _pullThreshold = 70;
+  static const double _waveSlotHeight = 13.5;
 
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
-  final GlobalKey _topSectionKey = GlobalKey();
   double _pullDistance = 0;
   bool _pullTriggered = false;
 
@@ -59,8 +61,15 @@ class _HomeViewState extends State<HomeView> {
     _searchController.clear();
     _searchFocus.unfocus();
     if (_scrollController.hasClients) {
-      _scrollController.animateTo(0, duration: const Duration(milliseconds: 350), curve: Curves.easeOutCubic);
+      _scrollController.jumpTo(0);
     }
+  }
+
+  void _onBack(LauncherState state) {
+    if (state.homeFilter is! FavoritesFilter) {
+      context.read<LauncherCubit>().showFavorites();
+    }
+    _returnHome();
   }
 
   bool _onScrollNotification(ScrollNotification notification) {
@@ -91,6 +100,26 @@ class _HomeViewState extends State<HomeView> {
     return showEntryActions(context, entry);
   }
 
+  Future<void> _createGroup() async {
+    final LauncherCubit cubit = context.read<LauncherCubit>();
+    final String? name = await showTextPromptDialog(context, title: RippleStrings.newGroup, hint: RippleStrings.groupNameHint);
+    if (name != null) {
+      await cubit.createGroup(name);
+    }
+  }
+
+  void _onWaveLetter(String letter) {
+    final LauncherCubit cubit = context.read<LauncherCubit>();
+    if (letter == RippleStrings.favoritesSymbol) {
+      cubit.showFavorites();
+    } else {
+      cubit.selectLetter(letter);
+    }
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
@@ -106,25 +135,41 @@ class _HomeViewState extends State<HomeView> {
           },
         ),
       ],
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (bool didPop, Object? result) => _returnHome(),
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          body: SafeArea(
-            child: BlocBuilder<LauncherCubit, LauncherState>(
-              builder: (BuildContext context, LauncherState state) {
-                return Column(
+      child: BlocBuilder<LauncherCubit, LauncherState>(
+        builder: (BuildContext context, LauncherState state) {
+          return PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (bool didPop, Object? result) => _onBack(state),
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(RippleSpacing.lg, RippleSpacing.xl, RippleSpacing.lg, RippleSpacing.md),
+                      child: widget.header,
+                    ),
+                    if (!state.isSearching)
+                      HomeFilterBar(
+                        filter: state.homeFilter,
+                        groups: state.catalog.groups,
+                        onFavorites: context.read<LauncherCubit>().showFavorites,
+                        onGroup: (LauncherGroup group) => context.read<LauncherCubit>().selectGroup(group.group.id),
+                        onManageGroup: (LauncherGroup group) =>
+                            showGroupActions(context, group.group, onEditApps: widget.onEditGroupApps),
+                        onCreateGroup: _createGroup,
+                      ),
+                    const SizedBox(height: RippleSpacing.sm),
                     Expanded(
                       child: state.isSearching
                           ? SearchResultsList(
                               results: state.searchResults,
-                              showIcons: widget.showIcons,
+                              iconStyle: widget.iconStyle,
                               onTap: _launch,
                               onLongPress: _showActions,
                             )
-                          : _buildHome(context, state),
+                          : _buildFilteredArea(context, state),
                     ),
                     SearchBarRow(
                       controller: _searchController,
@@ -138,180 +183,133 @@ class _HomeViewState extends State<HomeView> {
                       onOpenAllApps: widget.onOpenAllApps,
                     ),
                   ],
-                );
-              },
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildHome(BuildContext context, LauncherState state) {
+  Widget _buildFilteredArea(BuildContext context, LauncherState state) {
     final LauncherCatalog catalog = state.catalog;
+    final List<String> waveLetters = <String>[RippleStrings.favoritesSymbol, ...catalog.letters];
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double waveHeight = (waveLetters.length * _waveSlotHeight).clamp(0, constraints.maxHeight - RippleSpacing.md);
+        return Stack(
+          children: <Widget>[
+            NotificationListener<ScrollNotification>(
+              onNotification: _onScrollNotification,
+              child: _FilteredEntries(
+                controller: _scrollController,
+                state: state,
+                iconStyle: widget.iconStyle,
+                onTap: _launch,
+                onLongPress: _showActions,
+                onEditGroupApps: widget.onEditGroupApps,
+              ),
+            ),
+            Positioned(
+              right: RippleSpacing.xs,
+              bottom: RippleSpacing.sm,
+              height: waveHeight,
+              child: AlphabetWave(letters: waveLetters, onLetterSelected: _onWaveLetter),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _FilteredEntries extends StatelessWidget {
+  const _FilteredEntries({
+    required this.controller,
+    required this.state,
+    required this.iconStyle,
+    required this.onTap,
+    required this.onLongPress,
+    required this.onEditGroupApps,
+  });
+
+  final ScrollController controller;
+  final LauncherState state;
+  final AppIconStyle iconStyle;
+  final ValueChanged<LauncherEntry> onTap;
+  final ValueChanged<LauncherEntry> onLongPress;
+  final ValueChanged<AppGroup> onEditGroupApps;
+
+  @override
+  Widget build(BuildContext context) {
+    final LauncherCatalog catalog = state.catalog;
+    final HomeFilter filter = state.homeFilter;
     final TextTheme textTheme = Theme.of(context).textTheme;
-    final bool hasHomeApps = catalog.home.isNotEmpty;
-    final double rightGutter = hasHomeApps ? RippleSpacing.xl + RippleSpacing.sm : RippleSpacing.lg;
-    return Stack(
-      children: <Widget>[
-        NotificationListener<ScrollNotification>(
-          onNotification: _onScrollNotification,
-          child: CustomScrollView(
-            controller: _scrollController,
-            physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
-            slivers: <Widget>[
-              SliverToBoxAdapter(
-                child: KeyedSubtree(
-                  key: _topSectionKey,
-                  child: Padding(
-                    padding: EdgeInsets.only(left: RippleSpacing.sm, right: rightGutter),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: _buildTopSection(context, state, textTheme),
-                    ),
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsets.only(left: RippleSpacing.sm, right: rightGutter),
-                sliver: SliverFixedExtentList(
-                  itemExtent: AppRowSize.favorite.height,
-                  delegate: SliverChildBuilderDelegate(
-                    childCount: catalog.home.length,
-                    (BuildContext context, int index) {
-                      final LauncherEntry entry = catalog.home[index];
-                      final bool startsGroup = index == 0 || catalog.home[index - 1].letter != entry.letter;
-                      return AppRow(
-                        entry: entry,
-                        size: AppRowSize.favorite,
-                        showIcon: widget.showIcons,
-                        reserveLetterColumn: true,
-                        leadingLetter: startsGroup ? entry.letter : null,
-                        onTap: () => _launch(entry),
-                        onLongPress: () => _showActions(entry),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: SizedBox(height: hasHomeApps ? MediaQuery.sizeOf(context).height * 0.35 : RippleSpacing.xl),
-              ),
+    final LauncherGroup? group = filter is GroupFilter ? catalog.groupById(filter.groupId) : null;
+    final List<LauncherEntry> entries = switch (filter) {
+      FavoritesFilter() => catalog.favorites,
+      LetterFilter(:final String letter) => catalog.entriesForLetter(letter),
+      GroupFilter() => group?.entries ?? catalog.favorites,
+    };
+
+    final List<Widget> children = <Widget>[
+      if (filter is LetterFilter)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, 0, RippleSpacing.sm, RippleSpacing.sm),
+          child: Text(filter.letter, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w300, color: RippleColors.accent, height: 1)),
+        ),
+      if (state.status == LauncherStatus.loading)
+        _Hint(text: RippleStrings.loadingApps, textTheme: textTheme),
+      if (state.status == LauncherStatus.failure)
+        Padding(
+          padding: const EdgeInsets.all(RippleSpacing.sm),
+          child: Row(
+            children: <Widget>[
+              Expanded(child: Text(RippleStrings.appsUnavailable, style: textTheme.bodyMedium)),
+              TextButton(onPressed: context.read<LauncherCubit>().reloadApps, child: const Text(RippleStrings.retry)),
             ],
           ),
         ),
-        if (hasHomeApps)
-          Positioned(
-            top: RippleSpacing.lg,
-            bottom: RippleSpacing.lg,
-            right: RippleSpacing.xs,
-            child: AlphabetWave(
-              letters: catalog.homeLetters,
-              onLetterSelected: (String letter) => _jumpToHomeLetter(catalog, letter),
+      if (state.status == LauncherStatus.ready && entries.isEmpty)
+        switch (filter) {
+          FavoritesFilter() => _Hint(text: RippleStrings.noFavoritesYet, textTheme: textTheme),
+          LetterFilter() => _Hint(text: RippleStrings.noAppsForLetter, textTheme: textTheme),
+          GroupFilter() => GestureDetector(
+              onTap: group == null ? null : () => onEditGroupApps(group.group),
+              child: _Hint(text: RippleStrings.emptyGroup, textTheme: textTheme),
             ),
-          ),
-      ],
-    );
-  }
-
-  void _jumpToHomeLetter(LauncherCatalog catalog, String letter) {
-    final int? index = catalog.homeLetterIndex[letter];
-    final double? topHeight = _topSectionKey.currentContext?.size?.height;
-    if (index == null || topHeight == null || !_scrollController.hasClients) {
-      return;
-    }
-    final double target = topHeight + index * AppRowSize.favorite.height;
-    _scrollController.jumpTo(target.clamp(0, _scrollController.position.maxScrollExtent));
-  }
-
-  List<Widget> _buildTopSection(BuildContext context, LauncherState state, TextTheme textTheme) {
-    final LauncherCatalog catalog = state.catalog;
-    return <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, RippleSpacing.xl, RippleSpacing.sm, RippleSpacing.lg),
-            child: widget.header,
-          ),
-          if (state.status == LauncherStatus.loading)
-            Padding(
-              padding: const EdgeInsets.all(RippleSpacing.sm),
-              child: Text(RippleStrings.loadingApps, style: textTheme.bodyMedium),
-            ),
-          if (state.status == LauncherStatus.failure) _LoadFailure(onRetry: context.read<LauncherCubit>().reloadApps),
-          if (state.status == LauncherStatus.ready && catalog.isHomeEmpty) _EmptyHome(onOpenAllApps: widget.onOpenAllApps),
-          if (catalog.favorites.isNotEmpty) ...<Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, RippleSpacing.sm, RippleSpacing.sm, RippleSpacing.xs),
-              child: Text(RippleStrings.favorites.toUpperCase(), style: textTheme.labelMedium?.copyWith(color: RippleColors.textSecondary)),
-            ),
-            for (final LauncherEntry entry in catalog.favorites)
-              AppRow(
-                entry: entry,
-                size: AppRowSize.favorite,
-                showIcon: widget.showIcons,
-                onTap: () => _launch(entry),
-                onLongPress: () => _showActions(entry),
-              ),
-          ],
-          for (final LauncherGroup group in catalog.groups)
-            GroupSection(
-              group: group,
-              showIcons: widget.showIcons,
-              onToggle: () => context.read<LauncherCubit>().toggleGroupExpanded(group.group.id),
-              onManage: () => showGroupActions(context, group.group, onEditApps: widget.onEditGroupApps),
-              onTapEntry: _launch,
-              onLongPressEntry: _showActions,
-            ),
-          if (catalog.home.isNotEmpty && (catalog.favorites.isNotEmpty || catalog.groups.isNotEmpty))
-            Padding(
-              padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, RippleSpacing.md, RippleSpacing.sm, RippleSpacing.xs),
-              child: Text(RippleStrings.homeApps.toUpperCase(), style: textTheme.labelMedium?.copyWith(color: RippleColors.textSecondary)),
-            ),
+        },
+      for (final LauncherEntry entry in entries)
+        AppRow(
+          entry: entry,
+          size: AppRowSize.favorite,
+          iconStyle: iconStyle,
+          onTap: () => onTap(entry),
+          onLongPress: () => onLongPress(entry),
+        ),
     ];
-  }
-}
 
-class _EmptyHome extends StatelessWidget {
-  const _EmptyHome({required this.onOpenAllApps});
-
-  final VoidCallback onOpenAllApps;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(RippleSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(RippleStrings.emptyHomeTitle, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: RippleSpacing.sm),
-          Text(RippleStrings.emptyHomeBody, style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: RippleSpacing.md),
-          OutlinedButton.icon(
-            onPressed: onOpenAllApps,
-            icon: const Icon(Icons.apps_rounded),
-            label: const Text(RippleStrings.openAllApps),
-          ),
-        ],
-      ),
+    return ListView(
+      controller: controller,
+      physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
+      padding: const EdgeInsets.fromLTRB(RippleSpacing.md, 0, RippleSpacing.xl + RippleSpacing.md, RippleSpacing.xl),
+      children: children,
     );
   }
 }
 
-class _LoadFailure extends StatelessWidget {
-  const _LoadFailure({required this.onRetry});
+class _Hint extends StatelessWidget {
+  const _Hint({required this.text, required this.textTheme});
 
-  final VoidCallback onRetry;
+  final String text;
+  final TextTheme textTheme;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(RippleSpacing.sm),
-      child: Row(
-        children: <Widget>[
-          Expanded(child: Text(RippleStrings.appsUnavailable, style: Theme.of(context).textTheme.bodyMedium)),
-          TextButton(onPressed: onRetry, child: const Text(RippleStrings.retry)),
-        ],
-      ),
+      child: Text(text, style: textTheme.bodyMedium),
     );
   }
 }

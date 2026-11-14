@@ -8,8 +8,11 @@ class PreferencesLauncherSettingsGateway implements LauncherSettingsGateway {
 
   static const String _legacyShowWallpaperKey = 'settings.showWallpaper';
   static const String _wallpaperKey = 'settings.wallpaper';
-  static const String _showIconsKey = 'settings.showIcons';
+  static const String _legacyShowIconsKey = 'settings.showIcons';
+  static const String _iconStyleKey = 'settings.iconStyle';
+  static const String _noIconStyleId = 'none';
   static const String _weatherCityKey = 'settings.weatherCity';
+  static const String _photoPathKey = 'settings.photoPath';
   static const String _systemWallpaperId = 'system';
 
   final SharedPreferencesAsync _preferences;
@@ -19,9 +22,19 @@ class PreferencesLauncherSettingsGateway implements LauncherSettingsGateway {
     const LauncherSettings defaults = LauncherSettings();
     return LauncherSettings(
       wallpaperId: await _loadWallpaperId() ?? defaults.wallpaperId,
-      showIcons: await _preferences.getBool(_showIconsKey) ?? defaults.showIcons,
+      iconStyleId: await _loadIconStyleId() ?? defaults.iconStyleId,
       weatherCity: await _preferences.getString(_weatherCityKey) ?? defaults.weatherCity,
+      photoPath: await _preferences.getString(_photoPathKey) ?? defaults.photoPath,
     );
+  }
+
+  Future<String?> _loadIconStyleId() async {
+    final String? stored = await _preferences.getString(_iconStyleKey);
+    if (stored != null) {
+      return stored;
+    }
+    final bool? legacyShowIcons = await _preferences.getBool(_legacyShowIconsKey);
+    return legacyShowIcons == false ? _noIconStyleId : null;
   }
 
   Future<String?> _loadWallpaperId() async {
@@ -36,8 +49,9 @@ class PreferencesLauncherSettingsGateway implements LauncherSettingsGateway {
   @override
   Future<void> save(LauncherSettings settings) async {
     await _preferences.setString(_wallpaperKey, settings.wallpaperId);
-    await _preferences.setBool(_showIconsKey, settings.showIcons);
+    await _preferences.setString(_iconStyleKey, settings.iconStyleId);
     await _preferences.setString(_weatherCityKey, settings.weatherCity);
+    await _preferences.setString(_photoPathKey, settings.photoPath);
   }
 }
 

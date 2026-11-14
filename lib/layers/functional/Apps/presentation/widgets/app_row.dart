@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../technical/AppIcons/app_icon_style.dart';
+import '../../../../technical/AppIcons/styled_app_icon.dart';
 import '../../../../technical/Theme/ripple_colors.dart';
 import '../../../../technical/Theme/ripple_theme.dart';
 import '../../domain/entities/launcher_entry.dart';
@@ -19,7 +21,7 @@ class AppRow extends StatelessWidget {
   const AppRow({
     required this.entry,
     required this.size,
-    required this.showIcon,
+    required this.iconStyle,
     required this.onTap,
     required this.onLongPress,
     super.key,
@@ -29,7 +31,7 @@ class AppRow extends StatelessWidget {
 
   final LauncherEntry entry;
   final AppRowSize size;
-  final bool showIcon;
+  final AppIconStyle iconStyle;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
   final String? leadingLetter;
@@ -52,16 +54,14 @@ class AppRow extends StatelessWidget {
                   width: 22,
                   child: Text(leadingLetter ?? '', style: Theme.of(context).textTheme.labelMedium),
                 ),
-              if (showIcon) ...<Widget>[
-                Image.memory(
-                  entry.app.icon,
-                  width: size.iconSize,
-                  height: size.iconSize,
-                  gaplessPlayback: true,
-                  filterQuality: FilterQuality.medium,
-                  cacheWidth: (size.iconSize * MediaQuery.devicePixelRatioOf(context)).round(),
+              if (iconStyle != AppIconStyle.none) ...<Widget>[
+                StyledAppIcon(
+                  icon: entry.app.icon,
+                  monochromeIcon: entry.app.monochromeIcon,
+                  style: iconStyle,
+                  size: size.iconSize,
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 16),
               ],
               Expanded(
                 child: Text(

@@ -48,6 +48,14 @@ class OpenRippleAppInfo {
   Future<void> call() => _gateway.openRippleAppInfo();
 }
 
+class PickWallpaperPhoto {
+  const PickWallpaperPhoto(this._gateway);
+
+  final WallpaperPhotoGateway _gateway;
+
+  Future<String?> call() => _gateway.pickAndStore();
+}
+
 class OpenWallpaperPicker {
   const OpenWallpaperPicker(this._gateway);
 

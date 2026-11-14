@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../technical/AppIcons/app_icon_style.dart';
 import '../../../../technical/Localization/ripple_strings.dart';
 import '../../../../technical/Theme/ripple_theme.dart';
 import '../../domain/entities/launcher_entry.dart';
@@ -8,14 +9,14 @@ import 'app_row.dart';
 class SearchResultsList extends StatelessWidget {
   const SearchResultsList({
     required this.results,
-    required this.showIcons,
+    required this.iconStyle,
     required this.onTap,
     required this.onLongPress,
     super.key,
   });
 
   final List<LauncherEntry> results;
-  final bool showIcons;
+  final AppIconStyle iconStyle;
   final ValueChanged<LauncherEntry> onTap;
   final ValueChanged<LauncherEntry> onLongPress;
 
@@ -39,7 +40,7 @@ class SearchResultsList extends StatelessWidget {
         return AppRow(
           entry: entry,
           size: index == 0 ? AppRowSize.favorite : AppRowSize.regular,
-          showIcon: showIcons,
+          iconStyle: iconStyle,
           onTap: () => onTap(entry),
           onLongPress: () => onLongPress(entry),
         );
