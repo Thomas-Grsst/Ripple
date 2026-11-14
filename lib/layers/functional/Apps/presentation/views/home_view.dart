@@ -6,6 +6,7 @@ import '../../../../technical/Localization/ripple_strings.dart';
 import '../../../../technical/Theme/ripple_colors.dart';
 import '../../../../technical/Theme/ripple_theme.dart';
 import '../../domain/entities/app_group.dart';
+import '../../domain/entities/label_normalizer.dart';
 import '../../domain/entities/launcher_catalog.dart';
 import '../../domain/entities/launcher_entry.dart';
 import '../cubit/launcher_cubit.dart';
@@ -15,7 +16,7 @@ import '../widgets/app_row.dart';
 import '../widgets/entry_actions.dart';
 import '../widgets/entry_list.dart';
 import '../widgets/group_actions_sheet.dart';
-import '../widgets/home_filter_bar.dart';
+import '../widgets/group_row.dart';
 import '../widgets/rename_dialog.dart';
 import '../widgets/search_bar_row.dart';
 
@@ -66,8 +67,14 @@ class _HomeViewState extends State<HomeView> {
   }
 
   void _onBack(LauncherState state) {
-    if (state.homeFilter is! FavoritesFilter) {
-      context.read<LauncherCubit>().showFavorites();
+    final LauncherCubit cubit = context.read<LauncherCubit>();
+    switch (state.homeFilter) {
+      case GroupFilter():
+        cubit.selectLetter(LabelNormalizer.otherLetter);
+      case LetterFilter():
+        cubit.showFavorites();
+      case FavoritesFilter():
+        break;
     }
     _returnHome();
   }
@@ -150,17 +157,6 @@ class _HomeViewState extends State<HomeView> {
                       padding: const EdgeInsets.fromLTRB(RippleSpacing.lg, RippleSpacing.xl, RippleSpacing.lg, RippleSpacing.md),
                       child: widget.header,
                     ),
-                    if (!state.isSearching)
-                      HomeFilterBar(
-                        filter: state.homeFilter,
-                        groups: state.catalog.groups,
-                        onFavorites: context.read<LauncherCubit>().showFavorites,
-                        onGroup: (LauncherGroup group) => context.read<LauncherCubit>().selectGroup(group.group.id),
-                        onManageGroup: (LauncherGroup group) =>
-                            showGroupActions(context, group.group, onEditApps: widget.onEditGroupApps),
-                        onCreateGroup: _createGroup,
-                      ),
-                    const SizedBox(height: RippleSpacing.sm),
                     Expanded(
                       child: state.isSearching
                           ? SearchResultsList(
@@ -194,7 +190,11 @@ class _HomeViewState extends State<HomeView> {
 
   Widget _buildFilteredArea(BuildContext context, LauncherState state) {
     final LauncherCatalog catalog = state.catalog;
-    final List<String> waveLetters = <String>[RippleStrings.favoritesSymbol, ...catalog.letters];
+    final List<String> waveLetters = <String>[
+      RippleStrings.favoritesSymbol,
+      ...catalog.letters.where((String letter) => letter != LabelNormalizer.otherLetter),
+      LabelNormalizer.otherLetter,
+    ];
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double waveHeight = (waveLetters.length * _waveSlotHeight).clamp(0, constraints.maxHeight - RippleSpacing.md);
@@ -209,6 +209,10 @@ class _HomeViewState extends State<HomeView> {
                 onTap: _launch,
                 onLongPress: _showActions,
                 onEditGroupApps: widget.onEditGroupApps,
+                onOpenGroup: (LauncherGroup group) => context.read<LauncherCubit>().selectGroup(group.group.id),
+                onManageGroup: (LauncherGroup group) =>
+                    showGroupActions(context, group.group, onEditApps: widget.onEditGroupApps),
+                onCreateGroup: _createGroup,
               ),
             ),
             Positioned(
@@ -232,6 +236,9 @@ class _FilteredEntries extends StatelessWidget {
     required this.onTap,
     required this.onLongPress,
     required this.onEditGroupApps,
+    required this.onOpenGroup,
+    required this.onManageGroup,
+    required this.onCreateGroup,
   });
 
   final ScrollController controller;
@@ -240,6 +247,9 @@ class _FilteredEntries extends StatelessWidget {
   final ValueChanged<LauncherEntry> onTap;
   final ValueChanged<LauncherEntry> onLongPress;
   final ValueChanged<AppGroup> onEditGroupApps;
+  final ValueChanged<LauncherGroup> onOpenGroup;
+  final ValueChanged<LauncherGroup> onManageGroup;
+  final VoidCallback onCreateGroup;
 
   @override
   Widget build(BuildContext context) {
@@ -253,12 +263,32 @@ class _FilteredEntries extends StatelessWidget {
       GroupFilter() => group?.entries ?? catalog.favorites,
     };
 
+    final bool showsGroups = filter is LetterFilter && filter.letter == LabelNormalizer.otherLetter;
+    final String? title = switch (filter) {
+      FavoritesFilter() => null,
+      LetterFilter(:final String letter) => letter,
+      GroupFilter() => group?.group.name,
+    };
+
     final List<Widget> children = <Widget>[
-      if (filter is LetterFilter)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, 0, RippleSpacing.sm, RippleSpacing.sm),
-          child: Text(filter.letter, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w300, color: RippleColors.accent, height: 1)),
+      if (title != null)
+        GestureDetector(
+          onLongPress: group == null ? null : () => onManageGroup(group),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, 0, RippleSpacing.sm, RippleSpacing.sm),
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w300, color: RippleColors.accent, height: 1.1),
+            ),
+          ),
         ),
+      if (showsGroups) ...<Widget>[
+        for (final LauncherGroup item in catalog.groups)
+          GroupRow(group: item, onTap: () => onOpenGroup(item), onLongPress: () => onManageGroup(item)),
+        NewGroupRow(label: RippleStrings.newGroup, onTap: onCreateGroup),
+      ],
       if (state.status == LauncherStatus.loading)
         _Hint(text: RippleStrings.loadingApps, textTheme: textTheme),
       if (state.status == LauncherStatus.failure)
@@ -271,7 +301,7 @@ class _FilteredEntries extends StatelessWidget {
             ],
           ),
         ),
-      if (state.status == LauncherStatus.ready && entries.isEmpty)
+      if (state.status == LauncherStatus.ready && entries.isEmpty && !showsGroups)
         switch (filter) {
           FavoritesFilter() => _Hint(text: RippleStrings.noFavoritesYet, textTheme: textTheme),
           LetterFilter() => _Hint(text: RippleStrings.noAppsForLetter, textTheme: textTheme),
