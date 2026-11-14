@@ -95,6 +95,25 @@ class LauncherCubit extends Cubit<LauncherState> {
 
   Future<void> toggleFavorite(String packageName) => _updateCustomization(state.customization.toggleFavorite(packageName));
 
+  Future<void> reorderHomeEntries(int oldIndex, int newIndex) async {
+    final HomeFilter filter = state.homeFilter;
+    final List<LauncherEntry>? shown = switch (filter) {
+      FavoritesFilter() => state.catalog.favorites,
+      GroupFilter(:final String groupId) => state.catalog.groupById(groupId)?.entries,
+      LetterFilter() => null,
+    };
+    if (shown == null || oldIndex < 0 || oldIndex >= shown.length) {
+      return;
+    }
+    final List<String> order = shown.map((LauncherEntry entry) => entry.packageName).toList();
+    final String moved = order.removeAt(oldIndex);
+    order.insert(newIndex.clamp(0, order.length), moved);
+    await _updateCustomization(switch (filter) {
+      GroupFilter(:final String groupId) => state.customization.reorderGroupMembers(groupId, order),
+      _ => state.customization.reorderFavorites(order),
+    });
+  }
+
   Future<void> moveFavorite(int oldIndex, int newIndex) {
     return _updateCustomization(state.customization.moveFavorite(oldIndex, newIndex));
   }

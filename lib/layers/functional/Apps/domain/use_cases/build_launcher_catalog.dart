@@ -33,7 +33,11 @@ class BuildLauncherCatalog {
         .map(
           (AppGroup group) => LauncherGroup(
             group: group,
-            entries: visible.where((LauncherEntry entry) => group.contains(entry.packageName)).toList(growable: false),
+            entries: group.packages
+                .map((String packageName) => byPackage[packageName])
+                .whereType<LauncherEntry>()
+                .where((LauncherEntry entry) => !entry.isHidden)
+                .toList(growable: false),
           ),
         )
         .toList(growable: false);

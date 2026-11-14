@@ -80,6 +80,14 @@ class AppCustomization extends Equatable {
 
   AppCustomization moveGroup(int oldIndex, int newIndex) => copyWith(groups: _move(groups, oldIndex, newIndex));
 
+  AppCustomization reorderFavorites(List<String> shownOrder) {
+    return copyWith(favorites: _applyShownOrder(favorites, shownOrder));
+  }
+
+  AppCustomization reorderGroupMembers(String groupId, List<String> shownOrder) {
+    return _updateGroup(groupId, (AppGroup group) => group.copyWith(packages: _applyShownOrder(group.packages, shownOrder)));
+  }
+
   AppCustomization copyWith({
     List<String>? favorites,
     Set<String>? hidden,
@@ -98,6 +106,14 @@ class AppCustomization extends Equatable {
     return copyWith(
       groups: List<AppGroup>.unmodifiable(groups.map((AppGroup group) => group.id == groupId ? update(group) : group)),
     );
+  }
+
+  static List<String> _applyShownOrder(List<String> current, List<String> shownOrder) {
+    final List<String> shown = shownOrder.where(current.contains).toList();
+    return List<String>.unmodifiable(<String>[
+      ...shown,
+      ...current.where((String packageName) => !shown.contains(packageName)),
+    ]);
   }
 
   static List<T> _move<T>(List<T> items, int oldIndex, int newIndex) {

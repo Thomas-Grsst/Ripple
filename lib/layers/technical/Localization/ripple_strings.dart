@@ -36,6 +36,9 @@ abstract final class RippleStrings {
   static const String addToFavorites = 'Ajouter aux favoris';
   static const String removeFromFavorites = 'Retirer des favoris';
   static const String rename = 'Renommer';
+  static const String reorderApps = 'Réorganiser';
+  static const String reorderHint = 'Fais glisser les apps avec la poignée';
+  static const String done = 'Terminé';
   static const String hide = 'Masquer';
   static const String appInfo = 'Infos sur l\'app';
   static const String uninstall = 'Désinstaller';

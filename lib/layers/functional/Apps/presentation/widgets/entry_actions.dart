@@ -7,13 +7,15 @@ import 'app_actions_sheet.dart';
 import 'group_picker_sheet.dart';
 import 'rename_dialog.dart';
 
-Future<void> showEntryActions(BuildContext context, LauncherEntry entry) async {
+Future<void> showEntryActions(BuildContext context, LauncherEntry entry, {VoidCallback? onReorder}) async {
   final LauncherCubit cubit = context.read<LauncherCubit>();
-  final AppAction? action = await showAppActionsSheet(context, entry);
+  final AppAction? action = await showAppActionsSheet(context, entry, canReorder: onReorder != null);
   if (!context.mounted || action == null) {
     return;
   }
   switch (action) {
+    case AppAction.reorder:
+      onReorder?.call();
     case AppAction.toggleFavorite:
       await cubit.toggleFavorite(entry.packageName);
     case AppAction.addToGroup:

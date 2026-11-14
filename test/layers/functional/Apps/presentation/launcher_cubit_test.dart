@@ -97,6 +97,23 @@ void main() {
     expect(customization.stored.groups.single.packages, <String>['com.agenda']);
   });
 
+  test('favorites can be reordered from the home and the order persists', () async {
+    await cubit.toggleFavorite('com.agenda');
+    await cubit.toggleFavorite('com.maps');
+    await cubit.reorderHomeEntries(1, 0);
+    expect(cubit.state.catalog.favorites.map((e) => e.packageName), <String>['com.maps', 'com.agenda']);
+    expect(customization.stored.favorites, <String>['com.maps', 'com.agenda']);
+  });
+
+  test('apps inside a group can be reordered while the group is shown', () async {
+    await cubit.createGroup('XEFI', packages: <String>['com.agenda', 'com.maps']);
+    cubit.selectGroup(cubit.state.catalog.groups.single.group.id);
+    await cubit.reorderHomeEntries(0, 1);
+    expect(cubit.state.catalog.groups.single.entries.map((e) => e.packageName), <String>['com.maps', 'com.agenda']);
+    expect(customization.stored.groups.single.packages, <String>['com.maps', 'com.agenda']);
+    expect(customization.stored.favorites, isEmpty);
+  });
+
   test('the home shows favorites by default, then a letter or a group when selected', () async {
     expect(cubit.state.homeFilter, const FavoritesFilter());
 

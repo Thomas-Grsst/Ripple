@@ -5,21 +5,22 @@ import '../../../../technical/Theme/ripple_colors.dart';
 import '../../../../technical/Theme/ripple_theme.dart';
 import '../../domain/entities/launcher_entry.dart';
 
-enum AppAction { toggleFavorite, addToGroup, rename, hide, appInfo, uninstall }
+enum AppAction { reorder, toggleFavorite, addToGroup, rename, hide, appInfo, uninstall }
 
-Future<AppAction?> showAppActionsSheet(BuildContext context, LauncherEntry entry) {
+Future<AppAction?> showAppActionsSheet(BuildContext context, LauncherEntry entry, {bool canReorder = false}) {
   return showModalBottomSheet<AppAction>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (BuildContext context) => _AppActionsSheet(entry: entry),
+    builder: (BuildContext context) => _AppActionsSheet(entry: entry, canReorder: canReorder),
   );
 }
 
 class _AppActionsSheet extends StatelessWidget {
-  const _AppActionsSheet({required this.entry});
+  const _AppActionsSheet({required this.entry, required this.canReorder});
 
   final LauncherEntry entry;
+  final bool canReorder;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +41,7 @@ class _AppActionsSheet extends StatelessWidget {
               ],
             ),
           ),
+          if (canReorder) const _ActionTile(icon: Icons.swap_vert_rounded, label: RippleStrings.reorderApps, action: AppAction.reorder),
           _ActionTile(
             icon: entry.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
             label: entry.isFavorite ? RippleStrings.removeFromFavorites : RippleStrings.addToFavorites,

@@ -49,6 +49,7 @@ class _HomeViewState extends State<HomeView> {
   final FocusNode _searchFocus = FocusNode();
   double _pullDistance = 0;
   bool _pullTriggered = false;
+  bool _reordering = false;
 
   @override
   void dispose() {
@@ -58,7 +59,14 @@ class _HomeViewState extends State<HomeView> {
     super.dispose();
   }
 
+  void _stopReordering() {
+    if (_reordering) {
+      setState(() => _reordering = false);
+    }
+  }
+
   void _returnHome() {
+    _stopReordering();
     _searchController.clear();
     _searchFocus.unfocus();
     if (_scrollController.hasClients) {
@@ -67,6 +75,10 @@ class _HomeViewState extends State<HomeView> {
   }
 
   void _onBack(LauncherState state) {
+    if (_reordering) {
+      _stopReordering();
+      return;
+    }
     final LauncherCubit cubit = context.read<LauncherCubit>();
     switch (state.homeFilter) {
       case GroupFilter():
@@ -104,7 +116,18 @@ class _HomeViewState extends State<HomeView> {
 
   Future<void> _showActions(LauncherEntry entry) {
     _searchFocus.unfocus();
-    return showEntryActions(context, entry);
+    final LauncherState state = context.read<LauncherCubit>().state;
+    final bool canReorder = !state.isSearching &&
+        switch (state.homeFilter) {
+          FavoritesFilter() => entry.isFavorite,
+          GroupFilter() => true,
+          LetterFilter() => false,
+        };
+    return showEntryActions(
+      context,
+      entry,
+      onReorder: canReorder ? () => setState(() => _reordering = true) : null,
+    );
   }
 
   Future<void> _createGroup() async {
@@ -134,6 +157,11 @@ class _HomeViewState extends State<HomeView> {
         BlocListener<LauncherCubit, LauncherState>(
           listenWhen: (LauncherState previous, LauncherState current) => previous.homeRequests != current.homeRequests,
           listener: (BuildContext context, LauncherState state) => _returnHome(),
+        ),
+        BlocListener<LauncherCubit, LauncherState>(
+          listenWhen: (LauncherState previous, LauncherState current) =>
+              previous.homeFilter != current.homeFilter || (!previous.isSearching && current.isSearching),
+          listener: (BuildContext context, LauncherState state) => _stopReordering(),
         ),
         BlocListener<LauncherCubit, LauncherState>(
           listenWhen: (LauncherState previous, LauncherState current) => previous.launchFailures != current.launchFailures,
@@ -206,6 +234,9 @@ class _HomeViewState extends State<HomeView> {
                 controller: _scrollController,
                 state: state,
                 iconStyle: widget.iconStyle,
+                reordering: _reordering,
+                onReorder: context.read<LauncherCubit>().reorderHomeEntries,
+                onFinishReorder: _stopReordering,
                 onTap: _launch,
                 onLongPress: _showActions,
                 onEditGroupApps: widget.onEditGroupApps,
@@ -215,12 +246,13 @@ class _HomeViewState extends State<HomeView> {
                 onCreateGroup: _createGroup,
               ),
             ),
-            Positioned(
-              right: RippleSpacing.xs,
-              bottom: RippleSpacing.sm,
-              height: waveHeight,
-              child: AlphabetWave(letters: waveLetters, onLetterSelected: _onWaveLetter),
-            ),
+            if (!_reordering)
+              Positioned(
+                right: RippleSpacing.xs,
+                bottom: RippleSpacing.sm,
+                height: waveHeight,
+                child: AlphabetWave(letters: waveLetters, onLetterSelected: _onWaveLetter),
+              ),
           ],
         );
       },
@@ -233,6 +265,9 @@ class _FilteredEntries extends StatelessWidget {
     required this.controller,
     required this.state,
     required this.iconStyle,
+    required this.reordering,
+    required this.onReorder,
+    required this.onFinishReorder,
     required this.onTap,
     required this.onLongPress,
     required this.onEditGroupApps,
@@ -244,6 +279,9 @@ class _FilteredEntries extends StatelessWidget {
   final ScrollController controller;
   final LauncherState state;
   final AppIconStyle iconStyle;
+  final bool reordering;
+  final void Function(int oldIndex, int newIndex) onReorder;
+  final VoidCallback onFinishReorder;
   final ValueChanged<LauncherEntry> onTap;
   final ValueChanged<LauncherEntry> onLongPress;
   final ValueChanged<AppGroup> onEditGroupApps;
@@ -270,9 +308,9 @@ class _FilteredEntries extends StatelessWidget {
       GroupFilter() => group?.group.name,
     };
 
-    final List<Widget> children = <Widget>[
-      if (title != null)
-        GestureDetector(
+    final Widget? titleWidget = title == null
+        ? null
+        : GestureDetector(
           onLongPress: group == null ? null : () => onManageGroup(group),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, 0, RippleSpacing.sm, RippleSpacing.sm),
@@ -283,7 +321,50 @@ class _FilteredEntries extends StatelessWidget {
               style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w300, color: RippleColors.accent, height: 1.1),
             ),
           ),
+        );
+
+    if (reordering) {
+      return ReorderableListView(
+        scrollController: controller,
+        buildDefaultDragHandles: false,
+        padding: const EdgeInsets.fromLTRB(RippleSpacing.md, 0, RippleSpacing.md, RippleSpacing.xl),
+        header: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            ?titleWidget,
+            _ReorderBar(onDone: onFinishReorder),
+          ],
         ),
+        onReorderItem: onReorder,
+        children: <Widget>[
+          for (final (int index, LauncherEntry entry) in entries.indexed)
+            Row(
+              key: ValueKey<String>(entry.packageName),
+              children: <Widget>[
+                Expanded(
+                  child: AppRow(
+                    entry: entry,
+                    size: AppRowSize.favorite,
+                    iconStyle: iconStyle,
+                    onTap: () {},
+                    onLongPress: () {},
+                  ),
+                ),
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Padding(
+                    padding: EdgeInsets.all(RippleSpacing.sm),
+                    child: Icon(Icons.drag_handle_rounded, color: RippleColors.textSecondary),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      );
+    }
+
+    final List<Widget> children = <Widget>[
+      ?titleWidget,
       if (showsGroups) ...<Widget>[
         for (final LauncherGroup item in catalog.groups)
           GroupRow(group: item, onTap: () => onOpenGroup(item), onLongPress: () => onManageGroup(item)),
@@ -325,6 +406,29 @@ class _FilteredEntries extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
       padding: const EdgeInsets.fromLTRB(RippleSpacing.md, 0, RippleSpacing.xl + RippleSpacing.md, RippleSpacing.xl),
       children: children,
+    );
+  }
+}
+
+class _ReorderBar extends StatelessWidget {
+  const _ReorderBar({required this.onDone});
+
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, 0, 0, RippleSpacing.sm),
+      child: Row(
+        children: <Widget>[
+          const Icon(Icons.swap_vert_rounded, size: 18, color: RippleColors.accent),
+          const SizedBox(width: RippleSpacing.sm),
+          const Expanded(
+            child: Text(RippleStrings.reorderHint, style: TextStyle(fontSize: 14, color: RippleColors.textSecondary)),
+          ),
+          FilledButton(onPressed: onDone, child: const Text(RippleStrings.done)),
+        ],
+      ),
     );
   }
 }

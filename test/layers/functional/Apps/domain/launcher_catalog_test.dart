@@ -94,7 +94,7 @@ void main() {
   });
 
   group('Groups', () {
-    test('groups list their visible apps alphabetically and skip hidden ones', () {
+    test('groups list their visible apps in the saved order and skip hidden ones', () {
       final AppCustomization customization = const AppCustomization()
           .createGroup(id: 'xefi', name: ' XEFI ', packages: <String>['com.maps', 'com.agenda', 'com.music'])
           .hide('com.music');
@@ -107,7 +107,7 @@ void main() {
 
       final LauncherGroup xefi = catalog.groups.single;
       expect(xefi.group.name, 'XEFI');
-      expect(xefi.entries.map((LauncherEntry entry) => entry.packageName), <String>['com.agenda', 'com.maps']);
+      expect(xefi.entries.map((LauncherEntry entry) => entry.packageName), <String>['com.maps', 'com.agenda']);
       expect(customization.groups.single.contains('com.music'), isFalse);
     });
 
