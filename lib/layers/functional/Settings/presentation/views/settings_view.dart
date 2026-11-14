@@ -6,6 +6,7 @@ import '../../../../technical/Theme/ripple_colors.dart';
 import '../../../../technical/Theme/ripple_theme.dart';
 import '../../../../technical/Wallpapers/ripple_wallpaper.dart';
 import '../cubit/settings_cubit.dart';
+import '../widgets/notification_access_sheet.dart';
 import 'wallpaper_picker_view.dart';
 
 class SettingsView extends StatefulWidget {
@@ -75,7 +76,13 @@ class _SettingsViewState extends State<SettingsView> {
                 ),
                 title: const Text(RippleStrings.notificationBadges),
                 subtitle: Text(state.integration.hasNotificationAccess ? RippleStrings.notificationBadgesOn : RippleStrings.notificationBadgesOff),
-                onTap: cubit.openNotificationAccess,
+                onTap: state.integration.hasNotificationAccess
+                    ? cubit.openNotificationAccess
+                    : () => showNotificationAccessSheet(
+                          context,
+                          onOpenAppInfo: cubit.openRippleAppInfo,
+                          onOpenNotificationAccess: cubit.openNotificationAccess,
+                        ),
               ),
               const _SectionTitle(RippleStrings.sectionHome),
               ListTile(

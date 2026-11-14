@@ -61,5 +61,8 @@ class DeviceSystemIntegrationGateway implements SystemIntegrationGateway {
   Future<void> openNotificationAccess() => _bridge.openNotificationAccess();
 
   @override
+  Future<void> openRippleAppInfo() => _bridge.openRippleAppInfo();
+
+  @override
   Future<void> openWallpaperPicker() => _bridge.openWallpaperPicker();
 }

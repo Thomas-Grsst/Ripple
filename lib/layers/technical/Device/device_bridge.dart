@@ -58,6 +58,8 @@ class DeviceBridge {
 
   Future<void> openNotificationAccess() => _methods.invokeMethod<void>('openNotificationAccess');
 
+  Future<void> openRippleAppInfo() => _methods.invokeMethod<void>('openRippleAppInfo');
+
   Future<void> expandNotifications() => _methods.invokeMethod<void>('expandNotifications');
 
   Future<void> openWallpaperPicker() => _methods.invokeMethod<void>('openWallpaperPicker');

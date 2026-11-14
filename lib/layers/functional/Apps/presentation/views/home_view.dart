@@ -9,6 +9,7 @@ import '../../domain/entities/launcher_catalog.dart';
 import '../../domain/entities/launcher_entry.dart';
 import '../cubit/launcher_cubit.dart';
 import '../cubit/launcher_state.dart';
+import '../widgets/alphabet_wave.dart';
 import '../widgets/app_row.dart';
 import '../widgets/entry_actions.dart';
 import '../widgets/entry_list.dart';
@@ -42,6 +43,7 @@ class _HomeViewState extends State<HomeView> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
+  final GlobalKey _topSectionKey = GlobalKey();
   double _pullDistance = 0;
   bool _pullTriggered = false;
 
@@ -148,13 +150,83 @@ class _HomeViewState extends State<HomeView> {
   Widget _buildHome(BuildContext context, LauncherState state) {
     final LauncherCatalog catalog = state.catalog;
     final TextTheme textTheme = Theme.of(context).textTheme;
-    return NotificationListener<ScrollNotification>(
-      onNotification: _onScrollNotification,
-      child: ListView(
-        controller: _scrollController,
-        physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
-        padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, 0, RippleSpacing.lg, RippleSpacing.xl),
-        children: <Widget>[
+    final bool hasHomeApps = catalog.home.isNotEmpty;
+    final double rightGutter = hasHomeApps ? RippleSpacing.xl + RippleSpacing.sm : RippleSpacing.lg;
+    return Stack(
+      children: <Widget>[
+        NotificationListener<ScrollNotification>(
+          onNotification: _onScrollNotification,
+          child: CustomScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
+            slivers: <Widget>[
+              SliverToBoxAdapter(
+                child: KeyedSubtree(
+                  key: _topSectionKey,
+                  child: Padding(
+                    padding: EdgeInsets.only(left: RippleSpacing.sm, right: rightGutter),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: _buildTopSection(context, state, textTheme),
+                    ),
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: EdgeInsets.only(left: RippleSpacing.sm, right: rightGutter),
+                sliver: SliverFixedExtentList(
+                  itemExtent: AppRowSize.favorite.height,
+                  delegate: SliverChildBuilderDelegate(
+                    childCount: catalog.home.length,
+                    (BuildContext context, int index) {
+                      final LauncherEntry entry = catalog.home[index];
+                      final bool startsGroup = index == 0 || catalog.home[index - 1].letter != entry.letter;
+                      return AppRow(
+                        entry: entry,
+                        size: AppRowSize.favorite,
+                        showIcon: widget.showIcons,
+                        reserveLetterColumn: true,
+                        leadingLetter: startsGroup ? entry.letter : null,
+                        onTap: () => _launch(entry),
+                        onLongPress: () => _showActions(entry),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SizedBox(height: hasHomeApps ? MediaQuery.sizeOf(context).height * 0.35 : RippleSpacing.xl),
+              ),
+            ],
+          ),
+        ),
+        if (hasHomeApps)
+          Positioned(
+            top: RippleSpacing.lg,
+            bottom: RippleSpacing.lg,
+            right: RippleSpacing.xs,
+            child: AlphabetWave(
+              letters: catalog.homeLetters,
+              onLetterSelected: (String letter) => _jumpToHomeLetter(catalog, letter),
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _jumpToHomeLetter(LauncherCatalog catalog, String letter) {
+    final int? index = catalog.homeLetterIndex[letter];
+    final double? topHeight = _topSectionKey.currentContext?.size?.height;
+    if (index == null || topHeight == null || !_scrollController.hasClients) {
+      return;
+    }
+    final double target = topHeight + index * AppRowSize.favorite.height;
+    _scrollController.jumpTo(target.clamp(0, _scrollController.position.maxScrollExtent));
+  }
+
+  List<Widget> _buildTopSection(BuildContext context, LauncherState state, TextTheme textTheme) {
+    final LauncherCatalog catalog = state.catalog;
+    return <Widget>[
           Padding(
             padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, RippleSpacing.xl, RippleSpacing.sm, RippleSpacing.lg),
             child: widget.header,
@@ -189,9 +261,12 @@ class _HomeViewState extends State<HomeView> {
               onTapEntry: _launch,
               onLongPressEntry: _showActions,
             ),
-        ],
-      ),
-    );
+          if (catalog.home.isNotEmpty && (catalog.favorites.isNotEmpty || catalog.groups.isNotEmpty))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, RippleSpacing.md, RippleSpacing.sm, RippleSpacing.xs),
+              child: Text(RippleStrings.homeApps.toUpperCase(), style: textTheme.labelMedium?.copyWith(color: RippleColors.textSecondary)),
+            ),
+    ];
   }
 }
 

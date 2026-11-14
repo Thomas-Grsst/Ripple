@@ -52,6 +52,7 @@ Future<void> main() async {
     readSystemIntegration: ReadSystemIntegration(integrationGateway),
     requestDefaultLauncher: RequestDefaultLauncher(integrationGateway),
     openNotificationAccess: OpenNotificationAccess(integrationGateway),
+    openRippleAppInfo: OpenRippleAppInfo(integrationGateway),
     openWallpaperPicker: OpenWallpaperPicker(integrationGateway),
   );
 

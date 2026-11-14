@@ -13,6 +13,7 @@ class PreferencesAppCustomizationGateway implements AppCustomizationGateway {
   static const String _hiddenKey = 'apps.hidden';
   static const String _renamesKey = 'apps.renames';
   static const String _groupsKey = 'apps.groups';
+  static const String _homeKey = 'apps.home';
 
   final SharedPreferencesAsync _preferences;
 
@@ -27,6 +28,7 @@ class PreferencesAppCustomizationGateway implements AppCustomizationGateway {
       hidden: Set<String>.unmodifiable(hidden),
       renames: Map<String, String>.unmodifiable(_decodeRenames(renamesJson)),
       groups: List<AppGroup>.unmodifiable(_decodeGroups(groupsJson)),
+      homeApps: Set<String>.unmodifiable(await _preferences.getStringList(_homeKey) ?? const <String>[]),
     );
   }
 
@@ -36,6 +38,7 @@ class PreferencesAppCustomizationGateway implements AppCustomizationGateway {
     await _preferences.setStringList(_hiddenKey, customization.hidden.toList());
     await _preferences.setString(_renamesKey, jsonEncode(customization.renames));
     await _preferences.setString(_groupsKey, jsonEncode(customization.groups.map(_encodeGroup).toList()));
+    await _preferences.setStringList(_homeKey, customization.homeApps.toList());
   }
 
   Map<String, Object?> _encodeGroup(AppGroup group) {

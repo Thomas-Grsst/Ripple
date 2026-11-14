@@ -42,5 +42,7 @@ abstract interface class SystemIntegrationGateway {
 
   Future<void> openNotificationAccess();
 
+  Future<void> openRippleAppInfo();
+
   Future<void> openWallpaperPicker();
 }

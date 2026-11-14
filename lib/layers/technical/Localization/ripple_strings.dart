@@ -10,7 +10,11 @@ abstract final class RippleStrings {
 
   static const String favorites = 'Favoris';
   static const String emptyHomeTitle = 'Ton accueil est vide';
-  static const String emptyHomeBody = 'Ouvre « Toutes les apps », puis appui long sur une app pour l\'ajouter aux favoris ou à un groupe.';
+  static const String emptyHomeBody =
+      'Ouvre « Toutes les apps », puis appui long sur une app pour l\'ajouter à l\'accueil, aux favoris ou à un groupe.';
+  static const String addToHome = 'Ajouter à l\'accueil';
+  static const String removeFromHome = 'Retirer de l\'accueil';
+  static const String homeApps = 'Apps';
   static const String openAllApps = 'Toutes les apps';
   static const String close = 'Fermer';
   static const String addToGroup = 'Ajouter à un groupe';
@@ -63,6 +67,15 @@ abstract final class RippleStrings {
   static const String notificationBadges = 'Badges de notifications';
   static const String notificationBadgesOn = 'Accès aux notifications accordé';
   static const String notificationBadgesOff = 'Toucher pour autoriser l\'accès';
+  static const String notificationGuideTitle = 'Activer les badges';
+  static const String notificationGuideIntro =
+      'Android bloque cet accès pour les apps installées hors du Play Store. Deux étapes, une seule fois :';
+  static const String notificationGuideStepOne = 'Autoriser les paramètres restreints';
+  static const String notificationGuideStepOneHint =
+      'Dans Infos de l\'app : menu ⋮ en haut à droite → « Autoriser les paramètres restreints ».';
+  static const String notificationGuideStepTwo = 'Activer l\'accès aux notifications';
+  static const String notificationGuideStepTwoHint = 'Active l\'interrupteur de Ripple, puis reviens ici.';
+  static const String open = 'Ouvrir';
 
   static const List<String> weekdays = <String>['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
   static const List<String> months = <String>[

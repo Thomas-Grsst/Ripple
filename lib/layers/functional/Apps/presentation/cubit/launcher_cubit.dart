@@ -89,6 +89,8 @@ class LauncherCubit extends Cubit<LauncherState> {
 
   Future<void> expandNotificationShade() => _expandNotificationShade();
 
+  Future<void> toggleHome(String packageName) => _updateCustomization(state.customization.toggleHome(packageName));
+
   Future<void> toggleFavorite(String packageName) => _updateCustomization(state.customization.toggleFavorite(packageName));
 
   Future<void> moveFavorite(int oldIndex, int newIndex) {

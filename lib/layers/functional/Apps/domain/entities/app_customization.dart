@@ -8,8 +8,10 @@ class AppCustomization extends Equatable {
     this.hidden = const <String>{},
     this.renames = const <String, String>{},
     this.groups = const <AppGroup>[],
+    this.homeApps = const <String>{},
   });
 
+  final Set<String> homeApps;
   final List<String> favorites;
   final Set<String> hidden;
   final Map<String, String> renames;
@@ -18,6 +20,16 @@ class AppCustomization extends Equatable {
   bool isFavorite(String packageName) => favorites.contains(packageName);
 
   bool isHidden(String packageName) => hidden.contains(packageName);
+
+  bool isOnHome(String packageName) => homeApps.contains(packageName);
+
+  AppCustomization toggleHome(String packageName) {
+    final Set<String> next = Set<String>.of(homeApps);
+    if (!next.remove(packageName)) {
+      next.add(packageName);
+    }
+    return copyWith(homeApps: Set<String>.unmodifiable(next));
+  }
 
   AppCustomization toggleFavorite(String packageName) {
     final List<String> next = List<String>.of(favorites);
@@ -35,6 +47,7 @@ class AppCustomization extends Equatable {
     return copyWith(
       hidden: Set<String>.unmodifiable(<String>{...hidden, packageName}),
       favorites: List<String>.unmodifiable(favorites.where((String favorite) => favorite != packageName)),
+      homeApps: Set<String>.unmodifiable(homeApps.where((String item) => item != packageName).toSet()),
       groups: List<AppGroup>.unmodifiable(
         groups.map((AppGroup group) => group.contains(packageName) ? group.toggleMember(packageName) : group),
       ),
@@ -84,12 +97,14 @@ class AppCustomization extends Equatable {
     Set<String>? hidden,
     Map<String, String>? renames,
     List<AppGroup>? groups,
+    Set<String>? homeApps,
   }) {
     return AppCustomization(
       favorites: favorites ?? this.favorites,
       hidden: hidden ?? this.hidden,
       renames: renames ?? this.renames,
       groups: groups ?? this.groups,
+      homeApps: homeApps ?? this.homeApps,
     );
   }
 
@@ -107,5 +122,5 @@ class AppCustomization extends Equatable {
   }
 
   @override
-  List<Object?> get props => <Object?>[favorites, hidden, renames, groups];
+  List<Object?> get props => <Object?>[favorites, hidden, renames, groups, homeApps];
 }

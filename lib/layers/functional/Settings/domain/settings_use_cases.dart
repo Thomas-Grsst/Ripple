@@ -40,6 +40,14 @@ class OpenNotificationAccess {
   Future<void> call() => _gateway.openNotificationAccess();
 }
 
+class OpenRippleAppInfo {
+  const OpenRippleAppInfo(this._gateway);
+
+  final SystemIntegrationGateway _gateway;
+
+  Future<void> call() => _gateway.openRippleAppInfo();
+}
+
 class OpenWallpaperPicker {
   const OpenWallpaperPicker(this._gateway);
 

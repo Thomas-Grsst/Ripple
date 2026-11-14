@@ -17,6 +17,8 @@ class LauncherCatalog extends Equatable {
   const LauncherCatalog({
     this.favorites = const <LauncherEntry>[],
     this.groups = const <LauncherGroup>[],
+    this.home = const <LauncherEntry>[],
+    this.homeLetterIndex = const <String, int>{},
     this.visible = const <LauncherEntry>[],
     this.hidden = const <LauncherEntry>[],
     this.letterIndex = const <String, int>{},
@@ -24,14 +26,18 @@ class LauncherCatalog extends Equatable {
 
   final List<LauncherEntry> favorites;
   final List<LauncherGroup> groups;
+  final List<LauncherEntry> home;
+  final Map<String, int> homeLetterIndex;
   final List<LauncherEntry> visible;
   final List<LauncherEntry> hidden;
   final Map<String, int> letterIndex;
 
   List<String> get letters => letterIndex.keys.toList(growable: false);
 
-  bool get isHomeEmpty => favorites.isEmpty && groups.isEmpty;
+  List<String> get homeLetters => homeLetterIndex.keys.toList(growable: false);
+
+  bool get isHomeEmpty => favorites.isEmpty && groups.isEmpty && home.isEmpty;
 
   @override
-  List<Object?> get props => <Object?>[favorites, groups, visible, hidden, letterIndex];
+  List<Object?> get props => <Object?>[favorites, groups, home, homeLetterIndex, visible, hidden, letterIndex];
 }

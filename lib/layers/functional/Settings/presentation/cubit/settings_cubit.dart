@@ -34,6 +34,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     required this._readSystemIntegration,
     required this._requestDefaultLauncher,
     required this._openNotificationAccess,
+    required this._openRippleAppInfo,
     required this._openWallpaperPicker,
   })  : super(const SettingsState());
 
@@ -42,6 +43,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   final ReadSystemIntegration _readSystemIntegration;
   final RequestDefaultLauncher _requestDefaultLauncher;
   final OpenNotificationAccess _openNotificationAccess;
+  final OpenRippleAppInfo _openRippleAppInfo;
   final OpenWallpaperPicker _openWallpaperPicker;
 
   Future<void> start() async {
@@ -63,6 +65,8 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> requestDefaultLauncher() => _requestDefaultLauncher();
 
   Future<void> openNotificationAccess() => _openNotificationAccess();
+
+  Future<void> openRippleAppInfo() => _openRippleAppInfo();
 
   Future<void> openWallpaperPicker() => _openWallpaperPicker();
 

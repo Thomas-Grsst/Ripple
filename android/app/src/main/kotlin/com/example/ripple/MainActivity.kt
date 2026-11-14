@@ -89,7 +89,11 @@ class MainActivity : FlutterActivity() {
             }
             "hasNotificationAccess" -> result.success(hasNotificationAccess())
             "openNotificationAccess" -> {
-                startSafely(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                openNotificationAccess()
+                result.success(null)
+            }
+            "openRippleAppInfo" -> {
+                startSafely(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
                 result.success(null)
             }
             "expandNotifications" -> {
@@ -167,6 +171,16 @@ class MainActivity : FlutterActivity() {
         val enabled = Settings.Secure.getString(contentResolver, "enabled_notification_listeners") ?: return false
         val component = ComponentName(this, NotificationCounterService::class.java).flattenToString()
         return enabled.split(":").contains(component)
+    }
+
+    private fun openNotificationAccess() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val component = ComponentName(this, NotificationCounterService::class.java).flattenToString()
+            val detail = Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS)
+                .putExtra(Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME, component)
+            if (startSafely(detail)) return
+        }
+        startSafely(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
     }
 
     @Suppress("WrongConstant")

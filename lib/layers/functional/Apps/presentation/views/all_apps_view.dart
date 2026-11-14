@@ -47,7 +47,7 @@ class _AllAppsViewState extends State<AllAppsView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: RippleColors.background.withValues(alpha: 0.94),
+      backgroundColor: RippleColors.background,
       body: SafeArea(
         child: BlocBuilder<LauncherCubit, LauncherState>(
           builder: (BuildContext context, LauncherState state) {
