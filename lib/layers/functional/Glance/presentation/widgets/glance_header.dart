@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/battery_status.dart';
+import '../../domain/glance_layout.dart';
 import '../cubit/battery_cubit.dart';
 import '../cubit/weather_cubit.dart';
 import 'clock_faces.dart';
@@ -11,9 +12,10 @@ import 'clock_style.dart';
 import 'glance_snapshot.dart';
 
 class GlanceHeader extends StatefulWidget {
-  const GlanceHeader({required this.style, super.key});
+  const GlanceHeader({required this.style, required this.layout, super.key});
 
   final ClockStyle style;
+  final GlanceLayout layout;
 
   @override
   State<GlanceHeader> createState() => _GlanceHeaderState();
@@ -62,24 +64,25 @@ class _GlanceHeaderState extends State<GlanceHeader> {
     final GlanceSnapshot snapshot = GlanceSnapshot(now: _now, battery: battery, weather: weather.report);
     return GestureDetector(
       onTap: context.read<WeatherCubit>().refresh,
-      child: ClockFace(style: widget.style, snapshot: snapshot),
+      child: ClockFace(style: widget.style, snapshot: snapshot, items: widget.layout.visible),
     );
   }
 }
 
 class ClockFace extends StatelessWidget {
-  const ClockFace({required this.style, required this.snapshot, super.key});
+  const ClockFace({required this.style, required this.snapshot, required this.items, super.key});
 
   final ClockStyle style;
   final GlanceSnapshot snapshot;
+  final List<GlanceItem> items;
 
   @override
   Widget build(BuildContext context) {
     return switch (style) {
-      ClockStyle.stacked => StackedClockFace(snapshot: snapshot),
-      ClockStyle.outline => OutlineClockFace(snapshot: snapshot),
-      ClockStyle.column => ColumnClockFace(snapshot: snapshot),
-      ClockStyle.classic => ClassicClockFace(snapshot: snapshot),
+      ClockStyle.stacked => StackedClockFace(snapshot: snapshot, items: items),
+      ClockStyle.outline => OutlineClockFace(snapshot: snapshot, items: items),
+      ClockStyle.column => ColumnClockFace(snapshot: snapshot, items: items),
+      ClockStyle.classic => ClassicClockFace(snapshot: snapshot, items: items),
     };
   }
 }

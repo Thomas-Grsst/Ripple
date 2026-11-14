@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../technical/Theme/ripple_colors.dart';
+import '../../domain/glance_layout.dart';
 import 'glance_snapshot.dart';
 
 class StackedClockFace extends StatelessWidget {
-  const StackedClockFace({required this.snapshot, super.key});
+  const StackedClockFace({required this.snapshot, required this.items, super.key});
 
   final GlanceSnapshot snapshot;
+  final List<GlanceItem> items;
 
   @override
   Widget build(BuildContext context) {
@@ -35,9 +37,10 @@ class StackedClockFace extends StatelessWidget {
         const SizedBox(height: 10),
         _InfoRow(
           snapshot: snapshot,
+          items: items,
           style: GoogleFonts.outfit(fontSize: 15, color: RippleColors.textSecondary, fontWeight: FontWeight.w400),
           iconColor: RippleColors.textSecondary,
-          leading: snapshot.shortDate,
+          date: snapshot.shortDate,
         ),
       ],
     );
@@ -45,18 +48,22 @@ class StackedClockFace extends StatelessWidget {
 }
 
 class OutlineClockFace extends StatelessWidget {
-  const OutlineClockFace({required this.snapshot, super.key});
+  const OutlineClockFace({required this.snapshot, required this.items, super.key});
 
   final GlanceSnapshot snapshot;
+  final List<GlanceItem> items;
 
   @override
   Widget build(BuildContext context) {
     final TextStyle info = GoogleFonts.spaceMono(fontSize: 14, letterSpacing: 2, color: RippleColors.accent);
     final List<String> parts = <String>[
       snapshot.time,
-      snapshot.compactDate,
-      ?snapshot.batteryText,
-      if (snapshot.temperatureText != null) '${snapshot.temperatureText}C',
+      for (final GlanceItem item in items)
+        ?switch (item) {
+          GlanceItem.date => snapshot.compactDate,
+          GlanceItem.battery => snapshot.batteryText,
+          GlanceItem.weather => snapshot.temperatureText == null ? null : '${snapshot.temperatureText}C',
+        },
     ];
     return SizedBox(
       height: 150,
@@ -100,9 +107,10 @@ class OutlineClockFace extends StatelessWidget {
 }
 
 class ColumnClockFace extends StatelessWidget {
-  const ColumnClockFace({required this.snapshot, super.key});
+  const ColumnClockFace({required this.snapshot, required this.items, super.key});
 
   final GlanceSnapshot snapshot;
+  final List<GlanceItem> items;
 
   @override
   Widget build(BuildContext context) {
@@ -120,24 +128,12 @@ class ColumnClockFace extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Text(snapshot.weekday.toUpperCase(), style: detail.copyWith(color: RippleColors.textPrimary, letterSpacing: 2)),
-              Text('${snapshot.now.day} ${snapshot.month}', style: detail),
-              const SizedBox(height: 4),
-              Row(
-                children: <Widget>[
-                  if (snapshot.batteryText != null) ...<Widget>[
-                    Icon(snapshot.batteryIcon, size: 15, color: RippleColors.accent),
-                    const SizedBox(width: 3),
-                    Text(snapshot.batteryText!, style: detail),
-                    const SizedBox(width: 10),
-                  ],
-                  if (snapshot.temperatureText != null) ...<Widget>[
-                    Icon(snapshot.weatherIcon, size: 15, color: RippleColors.accent),
-                    const SizedBox(width: 3),
-                    Text(snapshot.temperatureText!, style: detail),
-                  ],
-                ],
-              ),
+              for (final GlanceItem item in items)
+                if (item == GlanceItem.date) ...<Widget>[
+                  Text(snapshot.weekday.toUpperCase(), style: detail.copyWith(color: RippleColors.textPrimary, letterSpacing: 2)),
+                  Text('${snapshot.now.day} ${snapshot.month}', style: detail),
+                ] else
+                  ?_GlanceValue.of(item, snapshot: snapshot, style: detail, iconColor: RippleColors.accent),
             ],
           ),
         ],
@@ -147,9 +143,10 @@ class ColumnClockFace extends StatelessWidget {
 }
 
 class ClassicClockFace extends StatelessWidget {
-  const ClassicClockFace({required this.snapshot, super.key});
+  const ClassicClockFace({required this.snapshot, required this.items, super.key});
 
   final GlanceSnapshot snapshot;
+  final List<GlanceItem> items;
 
   @override
   Widget build(BuildContext context) {
@@ -158,12 +155,13 @@ class ClassicClockFace extends StatelessWidget {
       children: <Widget>[
         Text(snapshot.time, style: Theme.of(context).textTheme.displayLarge),
         const SizedBox(height: 8),
-        Text(snapshot.longDate, style: const TextStyle(fontSize: 16, color: RippleColors.textSecondary)),
-        const SizedBox(height: 8),
         _InfoRow(
           snapshot: snapshot,
-          style: const TextStyle(fontSize: 15, color: RippleColors.accent),
+          items: items,
+          style: const TextStyle(fontSize: 16, color: RippleColors.accent),
           iconColor: RippleColors.accent,
+          date: snapshot.longDate,
+          dateStyle: const TextStyle(fontSize: 16, color: RippleColors.textSecondary),
         ),
       ],
     );
@@ -171,41 +169,69 @@ class ClassicClockFace extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.snapshot, required this.style, required this.iconColor, this.leading});
+  const _InfoRow({
+    required this.snapshot,
+    required this.items,
+    required this.style,
+    required this.iconColor,
+    required this.date,
+    this.dateStyle,
+  });
 
   final GlanceSnapshot snapshot;
+  final List<GlanceItem> items;
   final TextStyle style;
   final Color iconColor;
-  final String? leading;
+  final String date;
+  final TextStyle? dateStyle;
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> items = <Widget>[
-      if (leading != null) Text(leading!, style: style),
-      if (snapshot.batteryText != null)
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(snapshot.batteryIcon, size: 16, color: iconColor),
-            const SizedBox(width: 3),
-            Text(snapshot.batteryText!, style: style),
-          ],
-        ),
-      if (snapshot.temperatureText != null)
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(snapshot.weatherIcon, size: 16, color: iconColor),
-            const SizedBox(width: 4),
-            Text(snapshot.temperatureText!, style: style),
-          ],
-        ),
-    ];
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
       spacing: 14,
       runSpacing: 4,
-      children: items,
+      children: <Widget>[
+        for (final GlanceItem item in items)
+          if (item == GlanceItem.date)
+            Text(date, style: dateStyle ?? style)
+          else
+            ?_GlanceValue.of(item, snapshot: snapshot, style: style, iconColor: iconColor),
+      ],
+    );
+  }
+}
+
+class _GlanceValue extends StatelessWidget {
+  const _GlanceValue({required this.icon, required this.text, required this.style, required this.iconColor});
+
+  static _GlanceValue? of(GlanceItem item, {required GlanceSnapshot snapshot, required TextStyle style, required Color iconColor}) {
+    final String? text = switch (item) {
+      GlanceItem.date => null,
+      GlanceItem.battery => snapshot.batteryText,
+      GlanceItem.weather => snapshot.temperatureText,
+    };
+    if (text == null) {
+      return null;
+    }
+    final IconData icon = item == GlanceItem.battery ? snapshot.batteryIcon : snapshot.weatherIcon;
+    return _GlanceValue(icon: icon, text: text, style: style, iconColor: iconColor);
+  }
+
+  final IconData icon;
+  final String text;
+  final TextStyle style;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: (style.fontSize ?? 15) + 1, color: iconColor),
+        const SizedBox(width: 4),
+        Text(text, style: style),
+      ],
     );
   }
 }

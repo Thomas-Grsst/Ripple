@@ -1,26 +1,28 @@
 import 'package:equatable/equatable.dart';
 
 class LauncherSettings extends Equatable {
-  const LauncherSettings({this.wallpaperId = 'black', this.iconStyleId = 'monochrome', this.weatherCity = '', this.photoPath = '', this.clockStyleId = 'stacked'});
+  const LauncherSettings({this.wallpaperId = 'black', this.iconStyleId = 'monochrome', this.weatherCity = '', this.photoPath = '', this.clockStyleId = 'stacked', this.glanceLayoutId = 'date,battery,weather'});
 
   final String wallpaperId;
   final String iconStyleId;
   final String weatherCity;
   final String photoPath;
   final String clockStyleId;
+  final String glanceLayoutId;
 
-  LauncherSettings copyWith({String? wallpaperId, String? iconStyleId, String? weatherCity, String? photoPath, String? clockStyleId}) {
+  LauncherSettings copyWith({String? wallpaperId, String? iconStyleId, String? weatherCity, String? photoPath, String? clockStyleId, String? glanceLayoutId}) {
     return LauncherSettings(
       wallpaperId: wallpaperId ?? this.wallpaperId,
       iconStyleId: iconStyleId ?? this.iconStyleId,
       weatherCity: weatherCity ?? this.weatherCity,
       photoPath: photoPath ?? this.photoPath,
       clockStyleId: clockStyleId ?? this.clockStyleId,
+      glanceLayoutId: glanceLayoutId ?? this.glanceLayoutId,
     );
   }
 
   @override
-  List<Object?> get props => <Object?>[wallpaperId, iconStyleId, weatherCity, photoPath, clockStyleId];
+  List<Object?> get props => <Object?>[wallpaperId, iconStyleId, weatherCity, photoPath, clockStyleId, glanceLayoutId];
 }
 
 class SystemIntegrationStatus extends Equatable {

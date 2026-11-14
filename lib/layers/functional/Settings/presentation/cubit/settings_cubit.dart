@@ -65,6 +65,8 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   Future<void> setClockStyle(String clockStyleId) => _update(state.settings.copyWith(clockStyleId: clockStyleId));
 
+  Future<void> setGlanceLayout(String glanceLayoutId) => _update(state.settings.copyWith(glanceLayoutId: glanceLayoutId));
+
   Future<void> setIconStyle(String iconStyleId) => _update(state.settings.copyWith(iconStyleId: iconStyleId));
 
   Future<void> setWeatherCity(String city) => _update(state.settings.copyWith(weatherCity: city.trim()));

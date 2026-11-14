@@ -10,6 +10,7 @@ import 'layers/functional/Apps/presentation/views/group_editor_view.dart';
 import 'layers/functional/Apps/presentation/views/groups_view.dart';
 import 'layers/functional/Apps/presentation/views/hidden_apps_view.dart';
 import 'layers/functional/Apps/presentation/views/home_view.dart';
+import 'layers/functional/Glance/domain/glance_layout.dart';
 import 'layers/functional/Glance/presentation/cubit/battery_cubit.dart';
 import 'layers/functional/Glance/presentation/cubit/weather_cubit.dart';
 import 'layers/functional/Glance/presentation/views/clock_style_picker_view.dart';
@@ -108,9 +109,13 @@ class _RippleHome extends StatelessWidget {
         builder: (BuildContext routeContext) => SettingsView(
           onOpenClockStyle: () => Navigator.of(routeContext).push(
             MaterialPageRoute<void>(
-              builder: (BuildContext pickerContext) => ClockStylePickerView(
-                selected: ClockStyle.fromId(pickerContext.read<SettingsCubit>().state.settings.clockStyleId),
-                onSelected: (ClockStyle style) => pickerContext.read<SettingsCubit>().setClockStyle(style.id),
+              builder: (BuildContext pickerContext) => BlocBuilder<SettingsCubit, SettingsState>(
+                builder: (BuildContext pickerContext, SettingsState state) => ClockStylePickerView(
+                  selected: ClockStyle.fromId(state.settings.clockStyleId),
+                  onSelected: (ClockStyle style) => pickerContext.read<SettingsCubit>().setClockStyle(style.id),
+                  layout: GlanceLayout.decode(state.settings.glanceLayoutId),
+                  onLayoutChanged: (GlanceLayout layout) => pickerContext.read<SettingsCubit>().setGlanceLayout(layout.encode()),
+                ),
               ),
             ),
           ),
@@ -139,6 +144,7 @@ class _RippleHome extends StatelessWidget {
           previous.settings.wallpaperId != current.settings.wallpaperId ||
           previous.settings.photoPath != current.settings.photoPath ||
           previous.settings.clockStyleId != current.settings.clockStyleId ||
+          previous.settings.glanceLayoutId != current.settings.glanceLayoutId ||
           previous.settings.iconStyleId != current.settings.iconStyleId,
       builder: (BuildContext context, SettingsState state) {
         final AppIconStyle iconStyle = AppIconStyle.fromId(state.settings.iconStyleId);
@@ -150,7 +156,10 @@ class _RippleHome extends StatelessWidget {
               photoPath: state.settings.photoPath,
             ),
             HomeView(
-              header: GlanceHeader(style: ClockStyle.fromId(state.settings.clockStyleId)),
+              header: GlanceHeader(
+                style: ClockStyle.fromId(state.settings.clockStyleId),
+                layout: GlanceLayout.decode(state.settings.glanceLayoutId),
+              ),
               iconStyle: iconStyle,
               onOpenSettings: () => _openSettings(context),
               onOpenAllApps: () => _openAllApps(context, iconStyle),
