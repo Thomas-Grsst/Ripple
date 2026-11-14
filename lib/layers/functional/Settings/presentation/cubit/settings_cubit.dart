@@ -63,6 +63,8 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   Future<void> setWallpaper(String wallpaperId) => _update(state.settings.copyWith(wallpaperId: wallpaperId));
 
+  Future<void> setClockStyle(String clockStyleId) => _update(state.settings.copyWith(clockStyleId: clockStyleId));
+
   Future<void> setIconStyle(String iconStyleId) => _update(state.settings.copyWith(iconStyleId: iconStyleId));
 
   Future<void> setWeatherCity(String city) => _update(state.settings.copyWith(weatherCity: city.trim()));

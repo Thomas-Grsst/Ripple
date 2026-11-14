@@ -3,42 +3,37 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../technical/Localization/ripple_strings.dart';
-import '../../../../technical/Theme/ripple_colors.dart';
-import '../../domain/weather_report.dart';
+import '../../domain/battery_status.dart';
+import '../cubit/battery_cubit.dart';
 import '../cubit/weather_cubit.dart';
+import 'clock_faces.dart';
+import 'clock_style.dart';
+import 'glance_snapshot.dart';
 
-class GlanceHeader extends StatelessWidget {
-  const GlanceHeader({super.key});
+class GlanceHeader extends StatefulWidget {
+  const GlanceHeader({required this.style, super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        _LiveClock(),
-        SizedBox(height: 10),
-        _WeatherLine(),
-      ],
-    );
-  }
-}
-
-class _LiveClock extends StatefulWidget {
-  const _LiveClock();
+  final ClockStyle style;
 
   @override
-  State<_LiveClock> createState() => _LiveClockState();
+  State<GlanceHeader> createState() => _GlanceHeaderState();
 }
 
-class _LiveClockState extends State<_LiveClock> {
+class _GlanceHeaderState extends State<GlanceHeader> {
   DateTime _now = DateTime.now();
   Timer? _timer;
+  late final AppLifecycleListener _lifecycleListener;
 
   @override
   void initState() {
     super.initState();
     _scheduleNextTick();
+    _lifecycleListener = AppLifecycleListener(onResume: _onResume);
+  }
+
+  void _onResume() {
+    setState(() => _now = DateTime.now());
+    context.read<BatteryCubit>().refresh();
   }
 
   void _scheduleNextTick() {
@@ -56,60 +51,35 @@ class _LiveClockState extends State<_LiveClock> {
   @override
   void dispose() {
     _timer?.cancel();
+    _lifecycleListener.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final String hours = _now.hour.toString().padLeft(2, '0');
-    final String minutes = _now.minute.toString().padLeft(2, '0');
-    final String weekday = RippleStrings.weekdays[_now.weekday - 1];
-    final String month = RippleStrings.months[_now.month - 1];
-    final String date = '${weekday[0].toUpperCase()}${weekday.substring(1)} ${_now.day} $month';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text('$hours:$minutes', style: Theme.of(context).textTheme.displayLarge),
-        const SizedBox(height: 8),
-        Text(date, style: const TextStyle(fontSize: 16, color: RippleColors.textSecondary)),
-      ],
+    final BatteryStatus? battery = context.watch<BatteryCubit>().state;
+    final WeatherState weather = context.watch<WeatherCubit>().state;
+    final GlanceSnapshot snapshot = GlanceSnapshot(now: _now, battery: battery, weather: weather.report);
+    return GestureDetector(
+      onTap: context.read<WeatherCubit>().refresh,
+      child: ClockFace(style: widget.style, snapshot: snapshot),
     );
   }
 }
 
-class _WeatherLine extends StatelessWidget {
-  const _WeatherLine();
+class ClockFace extends StatelessWidget {
+  const ClockFace({required this.style, required this.snapshot, super.key});
 
-  String _describe(WeatherCondition condition) {
-    return switch (condition) {
-      WeatherCondition.clear => RippleStrings.weatherClear,
-      WeatherCondition.partlyCloudy => RippleStrings.weatherPartlyCloudy,
-      WeatherCondition.cloudy => RippleStrings.weatherCloudy,
-      WeatherCondition.fog => RippleStrings.weatherFog,
-      WeatherCondition.drizzle => RippleStrings.weatherDrizzle,
-      WeatherCondition.rain => RippleStrings.weatherRain,
-      WeatherCondition.snow => RippleStrings.weatherSnow,
-      WeatherCondition.showers => RippleStrings.weatherShowers,
-      WeatherCondition.storm => RippleStrings.weatherStorm,
-    };
-  }
+  final ClockStyle style;
+  final GlanceSnapshot snapshot;
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<WeatherCubit, WeatherState>(
-      builder: (BuildContext context, WeatherState state) {
-        final WeatherReport? report = state.report;
-        if (report == null) {
-          return const SizedBox.shrink();
-        }
-        return GestureDetector(
-          onTap: context.read<WeatherCubit>().refresh,
-          child: Text(
-            '${report.temperature.round()}° · ${_describe(report.condition)} · ${report.city}',
-            style: const TextStyle(fontSize: 15, color: RippleColors.accent),
-          ),
-        );
-      },
-    );
+    return switch (style) {
+      ClockStyle.stacked => StackedClockFace(snapshot: snapshot),
+      ClockStyle.outline => OutlineClockFace(snapshot: snapshot),
+      ClockStyle.column => ColumnClockFace(snapshot: snapshot),
+      ClockStyle.classic => ClassicClockFace(snapshot: snapshot),
+    };
   }
 }

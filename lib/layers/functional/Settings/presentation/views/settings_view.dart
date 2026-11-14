@@ -12,12 +12,14 @@ import 'wallpaper_picker_view.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({
+    required this.onOpenClockStyle,
     required this.onOpenFavoritesOrder,
     required this.onOpenGroups,
     required this.onOpenHiddenApps,
     super.key,
   });
 
+  final VoidCallback onOpenClockStyle;
   final VoidCallback onOpenFavoritesOrder;
   final VoidCallback onOpenGroups;
   final VoidCallback onOpenHiddenApps;
@@ -113,6 +115,13 @@ class _SettingsViewState extends State<SettingsView> {
                         ),
               ),
               const _SectionTitle(RippleStrings.sectionHome),
+              ListTile(
+                leading: const Icon(Icons.schedule_rounded),
+                title: const Text(RippleStrings.clockStyle),
+                subtitle: const Text(RippleStrings.clockStyleHint),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: widget.onOpenClockStyle,
+              ),
               ListTile(
                 leading: const Icon(Icons.wallpaper_rounded),
                 title: const Text(RippleStrings.wallpaper),

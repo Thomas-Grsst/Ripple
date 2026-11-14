@@ -10,7 +10,10 @@ import 'layers/functional/Apps/presentation/views/group_editor_view.dart';
 import 'layers/functional/Apps/presentation/views/groups_view.dart';
 import 'layers/functional/Apps/presentation/views/hidden_apps_view.dart';
 import 'layers/functional/Apps/presentation/views/home_view.dart';
+import 'layers/functional/Glance/presentation/cubit/battery_cubit.dart';
 import 'layers/functional/Glance/presentation/cubit/weather_cubit.dart';
+import 'layers/functional/Glance/presentation/views/clock_style_picker_view.dart';
+import 'layers/functional/Glance/presentation/widgets/clock_style.dart';
 import 'layers/functional/Glance/presentation/widgets/glance_header.dart';
 import 'layers/functional/Settings/presentation/cubit/settings_cubit.dart';
 import 'layers/functional/Settings/presentation/views/settings_view.dart';
@@ -25,12 +28,14 @@ class RippleApp extends StatelessWidget {
     required this.launcherCubit,
     required this.settingsCubit,
     required this.weatherCubit,
+    required this.batteryCubit,
     super.key,
   });
 
   final LauncherCubit launcherCubit;
   final SettingsCubit settingsCubit;
   final WeatherCubit weatherCubit;
+  final BatteryCubit batteryCubit;
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
@@ -40,6 +45,7 @@ class RippleApp extends StatelessWidget {
         BlocProvider<LauncherCubit>.value(value: launcherCubit),
         BlocProvider<SettingsCubit>.value(value: settingsCubit),
         BlocProvider<WeatherCubit>.value(value: weatherCubit),
+        BlocProvider<BatteryCubit>.value(value: batteryCubit),
       ],
       child: MultiBlocListener(
         listeners: <BlocListener<Object?, Object?>>[
@@ -100,6 +106,14 @@ class _RippleHome extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (BuildContext routeContext) => SettingsView(
+          onOpenClockStyle: () => Navigator.of(routeContext).push(
+            MaterialPageRoute<void>(
+              builder: (BuildContext pickerContext) => ClockStylePickerView(
+                selected: ClockStyle.fromId(pickerContext.read<SettingsCubit>().state.settings.clockStyleId),
+                onSelected: (ClockStyle style) => pickerContext.read<SettingsCubit>().setClockStyle(style.id),
+              ),
+            ),
+          ),
           onOpenFavoritesOrder: () => Navigator.of(routeContext).push(
             MaterialPageRoute<void>(builder: (_) => const FavoritesOrderView()),
           ),
@@ -124,6 +138,7 @@ class _RippleHome extends StatelessWidget {
       buildWhen: (SettingsState previous, SettingsState current) =>
           previous.settings.wallpaperId != current.settings.wallpaperId ||
           previous.settings.photoPath != current.settings.photoPath ||
+          previous.settings.clockStyleId != current.settings.clockStyleId ||
           previous.settings.iconStyleId != current.settings.iconStyleId,
       builder: (BuildContext context, SettingsState state) {
         final AppIconStyle iconStyle = AppIconStyle.fromId(state.settings.iconStyleId);
@@ -135,7 +150,7 @@ class _RippleHome extends StatelessWidget {
               photoPath: state.settings.photoPath,
             ),
             HomeView(
-              header: const GlanceHeader(),
+              header: GlanceHeader(style: ClockStyle.fromId(state.settings.clockStyleId)),
               iconStyle: iconStyle,
               onOpenSettings: () => _openSettings(context),
               onOpenAllApps: () => _openAllApps(context, iconStyle),

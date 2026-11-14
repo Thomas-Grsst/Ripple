@@ -16,6 +16,7 @@ import android.graphics.PorterDuffColorFilter
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import android.net.Uri
+import android.os.BatteryManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -86,6 +87,7 @@ class MainActivity : FlutterActivity() {
                 startSafely(Intent(Intent.ACTION_DELETE, Uri.parse("package:" + call.argument<String>("package"))))
                 result.success(null)
             }
+            "getBattery" -> result.success(readBattery())
             "isDefaultLauncher" -> result.success(isDefaultLauncher())
             "requestDefaultLauncher" -> {
                 requestDefaultLauncher()
@@ -169,6 +171,14 @@ class MainActivity : FlutterActivity() {
         } catch (exception: Exception) {
             false
         }
+    }
+
+    private fun readBattery(): Map<String, Any> {
+        val manager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+        return mapOf(
+            "level" to manager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY),
+            "charging" to manager.isCharging,
+        )
     }
 
     private fun isDefaultLauncher(): Boolean {

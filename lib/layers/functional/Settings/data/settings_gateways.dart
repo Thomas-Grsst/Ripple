@@ -13,6 +13,7 @@ class PreferencesLauncherSettingsGateway implements LauncherSettingsGateway {
   static const String _noIconStyleId = 'none';
   static const String _weatherCityKey = 'settings.weatherCity';
   static const String _photoPathKey = 'settings.photoPath';
+  static const String _clockStyleKey = 'settings.clockStyle';
   static const String _systemWallpaperId = 'system';
 
   final SharedPreferencesAsync _preferences;
@@ -25,6 +26,7 @@ class PreferencesLauncherSettingsGateway implements LauncherSettingsGateway {
       iconStyleId: await _loadIconStyleId() ?? defaults.iconStyleId,
       weatherCity: await _preferences.getString(_weatherCityKey) ?? defaults.weatherCity,
       photoPath: await _preferences.getString(_photoPathKey) ?? defaults.photoPath,
+      clockStyleId: await _preferences.getString(_clockStyleKey) ?? defaults.clockStyleId,
     );
   }
 
@@ -52,6 +54,7 @@ class PreferencesLauncherSettingsGateway implements LauncherSettingsGateway {
     await _preferences.setString(_iconStyleKey, settings.iconStyleId);
     await _preferences.setString(_weatherCityKey, settings.weatherCity);
     await _preferences.setString(_photoPathKey, settings.photoPath);
+    await _preferences.setString(_clockStyleKey, settings.clockStyleId);
   }
 }
 

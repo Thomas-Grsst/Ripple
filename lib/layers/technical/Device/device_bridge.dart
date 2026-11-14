@@ -50,6 +50,10 @@ class DeviceBridge {
     return _methods.invokeMethod<void>('uninstall', <String, Object>{'package': packageName});
   }
 
+  Future<Map<Object?, Object?>> getBattery() async {
+    return await _methods.invokeMapMethod<Object?, Object?>('getBattery') ?? const <Object?, Object?>{};
+  }
+
   Future<bool> isDefaultLauncher() async => await _methods.invokeMethod<bool>('isDefaultLauncher') ?? false;
 
   Future<void> requestDefaultLauncher() => _methods.invokeMethod<void>('requestDefaultLauncher');

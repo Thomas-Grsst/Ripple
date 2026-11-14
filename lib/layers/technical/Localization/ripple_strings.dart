@@ -52,6 +52,8 @@ abstract final class RippleStrings {
   static const String showWallpaper = 'Afficher le fond d\'écran';
   static const String showWallpaperHint = 'Sinon, fond noir intégral';
   static const String changeWallpaper = 'Changer de fond d\'écran';
+  static const String clockStyle = "Style de l'horloge";
+  static const String clockStyleHint = 'Heure, date, batterie et météo';
   static const String iconStyle = 'Style des icônes';
   static const String weatherCity = 'Ville pour la météo';
   static const String weatherCityEmpty = 'Aucune — météo masquée';
