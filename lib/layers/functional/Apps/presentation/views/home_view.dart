@@ -97,9 +97,6 @@ class _HomeViewState extends State<HomeView> {
       if (!_pullTriggered && _pullDistance < -_pullThreshold) {
         _pullTriggered = true;
         context.read<LauncherCubit>().expandNotificationShade();
-      } else if (!_pullTriggered && _pullDistance > _pullThreshold) {
-        _pullTriggered = true;
-        widget.onOpenAllApps();
       }
     } else if (notification is ScrollEndNotification) {
       _pullDistance = 0;
