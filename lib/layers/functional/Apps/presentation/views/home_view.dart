@@ -4,42 +4,46 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../technical/Localization/ripple_strings.dart';
 import '../../../../technical/Theme/ripple_colors.dart';
 import '../../../../technical/Theme/ripple_theme.dart';
+import '../../domain/entities/app_group.dart';
+import '../../domain/entities/launcher_catalog.dart';
 import '../../domain/entities/launcher_entry.dart';
 import '../cubit/launcher_cubit.dart';
 import '../cubit/launcher_state.dart';
-import '../widgets/alphabet_wave.dart';
-import '../widgets/app_actions_sheet.dart';
 import '../widgets/app_row.dart';
-import '../widgets/rename_dialog.dart';
+import '../widgets/entry_actions.dart';
+import '../widgets/entry_list.dart';
+import '../widgets/group_actions_sheet.dart';
+import '../widgets/group_section.dart';
 import '../widgets/search_bar_row.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({
     required this.header,
-    required this.showWallpaper,
     required this.showIcons,
     required this.onOpenSettings,
+    required this.onOpenAllApps,
+    required this.onEditGroupApps,
     super.key,
   });
 
   final Widget header;
-  final bool showWallpaper;
   final bool showIcons;
   final VoidCallback onOpenSettings;
+  final VoidCallback onOpenAllApps;
+  final ValueChanged<AppGroup> onEditGroupApps;
 
   @override
   State<HomeView> createState() => _HomeViewState();
 }
 
 class _HomeViewState extends State<HomeView> {
-  static const double _pullToExpandThreshold = 70;
+  static const double _pullThreshold = 70;
 
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
-  final GlobalKey _topSectionKey = GlobalKey();
   double _pullDistance = 0;
-  bool _shadeTriggered = false;
+  bool _pullTriggered = false;
 
   @override
   void dispose() {
@@ -57,58 +61,32 @@ class _HomeViewState extends State<HomeView> {
     }
   }
 
-  void _jumpToLetter(LauncherState state, String letter) {
-    final int? index = state.catalog.letterIndex[letter];
-    final double? topHeight = _topSectionKey.currentContext?.size?.height;
-    if (index == null || topHeight == null || !_scrollController.hasClients) {
-      return;
-    }
-    final double target = topHeight + index * AppRowSize.regular.height;
-    _scrollController.jumpTo(target.clamp(0, _scrollController.position.maxScrollExtent));
-  }
-
   bool _onScrollNotification(ScrollNotification notification) {
-    if (notification is OverscrollNotification && notification.dragDetails != null && notification.overscroll < 0) {
-      _pullDistance -= notification.overscroll;
-      if (!_shadeTriggered && _pullDistance > _pullToExpandThreshold) {
-        _shadeTriggered = true;
+    if (notification is OverscrollNotification && notification.dragDetails != null) {
+      _pullDistance += notification.overscroll;
+      if (!_pullTriggered && _pullDistance < -_pullThreshold) {
+        _pullTriggered = true;
         context.read<LauncherCubit>().expandNotificationShade();
+      } else if (!_pullTriggered && _pullDistance > _pullThreshold) {
+        _pullTriggered = true;
+        widget.onOpenAllApps();
       }
     } else if (notification is ScrollEndNotification) {
       _pullDistance = 0;
-      _shadeTriggered = false;
+      _pullTriggered = false;
     }
     return false;
-  }
-
-  Future<void> _showActions(LauncherEntry entry) async {
-    final LauncherCubit cubit = context.read<LauncherCubit>();
-    _searchFocus.unfocus();
-    final AppAction? action = await showAppActionsSheet(context, entry);
-    if (!mounted || action == null) {
-      return;
-    }
-    switch (action) {
-      case AppAction.toggleFavorite:
-        await cubit.toggleFavorite(entry.packageName);
-      case AppAction.rename:
-        final String? name = await showRenameDialog(context, currentName: entry.displayName);
-        if (name != null) {
-          await cubit.rename(entry.packageName, name == entry.app.label ? '' : name);
-        }
-      case AppAction.hide:
-        await cubit.hide(entry.packageName);
-      case AppAction.appInfo:
-        await cubit.openAppInfo(entry);
-      case AppAction.uninstall:
-        await cubit.uninstall(entry);
-    }
   }
 
   Future<void> _launch(LauncherEntry entry) async {
     _searchController.clear();
     _searchFocus.unfocus();
     await context.read<LauncherCubit>().launch(entry);
+  }
+
+  Future<void> _showActions(LauncherEntry entry) {
+    _searchFocus.unfocus();
+    return showEntryActions(context, entry);
   }
 
   @override
@@ -130,14 +108,22 @@ class _HomeViewState extends State<HomeView> {
         canPop: false,
         onPopInvokedWithResult: (bool didPop, Object? result) => _returnHome(),
         child: Scaffold(
-          resizeToAvoidBottomInset: true,
-          backgroundColor: widget.showWallpaper ? RippleColors.wallpaperScrim : RippleColors.background,
+          backgroundColor: Colors.transparent,
           body: SafeArea(
             child: BlocBuilder<LauncherCubit, LauncherState>(
               builder: (BuildContext context, LauncherState state) {
                 return Column(
                   children: <Widget>[
-                    Expanded(child: _buildContent(context, state)),
+                    Expanded(
+                      child: state.isSearching
+                          ? SearchResultsList(
+                              results: state.searchResults,
+                              showIcons: widget.showIcons,
+                              onTap: _launch,
+                              onLongPress: _showActions,
+                            )
+                          : _buildHome(context, state),
+                    ),
                     SearchBarRow(
                       controller: _searchController,
                       focusNode: _searchFocus,
@@ -147,6 +133,7 @@ class _HomeViewState extends State<HomeView> {
                         context.read<LauncherCubit>().launchFirstResult();
                       },
                       onOpenSettings: widget.onOpenSettings,
+                      onOpenAllApps: widget.onOpenAllApps,
                     ),
                   ],
                 );
@@ -158,96 +145,19 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _buildContent(BuildContext context, LauncherState state) {
-    if (state.isSearching) {
-      return _SearchResults(results: state.searchResults, showIcons: widget.showIcons, onTap: _launch, onLongPress: _showActions);
-    }
-    return Stack(
-      children: <Widget>[
-        NotificationListener<ScrollNotification>(
-          onNotification: _onScrollNotification,
-          child: CustomScrollView(
-            controller: _scrollController,
-            physics: const ClampingScrollPhysics(),
-            slivers: <Widget>[
-              SliverToBoxAdapter(
-                child: KeyedSubtree(
-                  key: _topSectionKey,
-                  child: _TopSection(
-                    header: widget.header,
-                    state: state,
-                    showIcons: widget.showIcons,
-                    onTap: _launch,
-                    onLongPress: _showActions,
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.only(left: RippleSpacing.sm, right: RippleSpacing.xl + RippleSpacing.sm),
-                sliver: SliverFixedExtentList(
-                  itemExtent: AppRowSize.regular.height,
-                  delegate: SliverChildBuilderDelegate(
-                    childCount: state.catalog.visible.length,
-                    (BuildContext context, int index) {
-                      final LauncherEntry entry = state.catalog.visible[index];
-                      final bool startsGroup = index == 0 || state.catalog.visible[index - 1].letter != entry.letter;
-                      return AppRow(
-                        entry: entry,
-                        size: AppRowSize.regular,
-                        showIcon: widget.showIcons,
-                        reserveLetterColumn: true,
-                        leadingLetter: startsGroup ? entry.letter : null,
-                        onTap: () => _launch(entry),
-                        onLongPress: () => _showActions(entry),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(child: SizedBox(height: MediaQuery.sizeOf(context).height * 0.4)),
-            ],
-          ),
-        ),
-        Positioned(
-          top: RippleSpacing.lg,
-          bottom: RippleSpacing.lg,
-          right: RippleSpacing.xs,
-          child: AlphabetWave(
-            letters: state.catalog.letters,
-            onLetterSelected: (String letter) => _jumpToLetter(state, letter),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _TopSection extends StatelessWidget {
-  const _TopSection({
-    required this.header,
-    required this.state,
-    required this.showIcons,
-    required this.onTap,
-    required this.onLongPress,
-  });
-
-  final Widget header;
-  final LauncherState state;
-  final bool showIcons;
-  final ValueChanged<LauncherEntry> onTap;
-  final ValueChanged<LauncherEntry> onLongPress;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildHome(BuildContext context, LauncherState state) {
+    final LauncherCatalog catalog = state.catalog;
     final TextTheme textTheme = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(left: RippleSpacing.sm, right: RippleSpacing.xl + RippleSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return NotificationListener<ScrollNotification>(
+      onNotification: _onScrollNotification,
+      child: ListView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
+        padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, 0, RippleSpacing.lg, RippleSpacing.xl),
         children: <Widget>[
           Padding(
-            padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, RippleSpacing.xl, RippleSpacing.sm, RippleSpacing.xl),
-            child: header,
+            padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, RippleSpacing.xl, RippleSpacing.sm, RippleSpacing.lg),
+            child: widget.header,
           ),
           if (state.status == LauncherStatus.loading)
             Padding(
@@ -255,22 +165,56 @@ class _TopSection extends StatelessWidget {
               child: Text(RippleStrings.loadingApps, style: textTheme.bodyMedium),
             ),
           if (state.status == LauncherStatus.failure) _LoadFailure(onRetry: context.read<LauncherCubit>().reloadApps),
-          if (state.status == LauncherStatus.ready && state.catalog.favorites.isEmpty)
+          if (state.status == LauncherStatus.ready && catalog.isHomeEmpty) _EmptyHome(onOpenAllApps: widget.onOpenAllApps),
+          if (catalog.favorites.isNotEmpty) ...<Widget>[
             Padding(
-              padding: const EdgeInsets.all(RippleSpacing.sm),
-              child: Text(RippleStrings.addFavoritesHint, style: textTheme.bodyMedium),
+              padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, RippleSpacing.sm, RippleSpacing.sm, RippleSpacing.xs),
+              child: Text(RippleStrings.favorites.toUpperCase(), style: textTheme.labelMedium?.copyWith(color: RippleColors.textSecondary)),
             ),
-          for (final LauncherEntry entry in state.catalog.favorites)
-            AppRow(
-              entry: entry,
-              size: AppRowSize.favorite,
-              showIcon: showIcons,
-              onTap: () => onTap(entry),
-              onLongPress: () => onLongPress(entry),
+            for (final LauncherEntry entry in catalog.favorites)
+              AppRow(
+                entry: entry,
+                size: AppRowSize.favorite,
+                showIcon: widget.showIcons,
+                onTap: () => _launch(entry),
+                onLongPress: () => _showActions(entry),
+              ),
+          ],
+          for (final LauncherGroup group in catalog.groups)
+            GroupSection(
+              group: group,
+              showIcons: widget.showIcons,
+              onToggle: () => context.read<LauncherCubit>().toggleGroupExpanded(group.group.id),
+              onManage: () => showGroupActions(context, group.group, onEditApps: widget.onEditGroupApps),
+              onTapEntry: _launch,
+              onLongPressEntry: _showActions,
             ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(RippleSpacing.sm, RippleSpacing.xl, RippleSpacing.sm, RippleSpacing.sm),
-            child: Text(RippleStrings.allApps.toUpperCase(), style: textTheme.labelMedium),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyHome extends StatelessWidget {
+  const _EmptyHome({required this.onOpenAllApps});
+
+  final VoidCallback onOpenAllApps;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(RippleSpacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(RippleStrings.emptyHomeTitle, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: RippleSpacing.sm),
+          Text(RippleStrings.emptyHomeBody, style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: RippleSpacing.md),
+          OutlinedButton.icon(
+            onPressed: onOpenAllApps,
+            icon: const Icon(Icons.apps_rounded),
+            label: const Text(RippleStrings.openAllApps),
           ),
         ],
       ),
@@ -293,43 +237,6 @@ class _LoadFailure extends StatelessWidget {
           TextButton(onPressed: onRetry, child: const Text(RippleStrings.retry)),
         ],
       ),
-    );
-  }
-}
-
-class _SearchResults extends StatelessWidget {
-  const _SearchResults({required this.results, required this.showIcons, required this.onTap, required this.onLongPress});
-
-  final List<LauncherEntry> results;
-  final bool showIcons;
-  final ValueChanged<LauncherEntry> onTap;
-  final ValueChanged<LauncherEntry> onLongPress;
-
-  @override
-  Widget build(BuildContext context) {
-    if (results.isEmpty) {
-      return Align(
-        alignment: Alignment.bottomLeft,
-        child: Padding(
-          padding: const EdgeInsets.all(RippleSpacing.lg),
-          child: Text(RippleStrings.noResults, style: Theme.of(context).textTheme.bodyMedium),
-        ),
-      );
-    }
-    return ListView.builder(
-      reverse: true,
-      padding: const EdgeInsets.symmetric(horizontal: RippleSpacing.sm),
-      itemCount: results.length,
-      itemBuilder: (BuildContext context, int index) {
-        final LauncherEntry entry = results[index];
-        return AppRow(
-          entry: entry,
-          size: index == 0 ? AppRowSize.favorite : AppRowSize.regular,
-          showIcon: showIcons,
-          onTap: () => onTap(entry),
-          onLongPress: () => onLongPress(entry),
-        );
-      },
     );
   }
 }

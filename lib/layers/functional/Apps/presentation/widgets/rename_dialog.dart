@@ -2,24 +2,40 @@ import 'package:flutter/material.dart';
 
 import '../../../../technical/Localization/ripple_strings.dart';
 
-Future<String?> showRenameDialog(BuildContext context, {required String currentName}) {
+Future<String?> showTextPromptDialog(
+  BuildContext context, {
+  required String title,
+  String initialValue = '',
+  String hint = '',
+}) {
   return showDialog<String>(
     context: context,
-    builder: (BuildContext context) => _RenameDialog(currentName: currentName),
+    builder: (BuildContext context) => _TextPromptDialog(title: title, initialValue: initialValue, hint: hint),
   );
 }
 
-class _RenameDialog extends StatefulWidget {
-  const _RenameDialog({required this.currentName});
-
-  final String currentName;
-
-  @override
-  State<_RenameDialog> createState() => _RenameDialogState();
+Future<String?> showRenameDialog(BuildContext context, {required String currentName}) {
+  return showTextPromptDialog(
+    context,
+    title: RippleStrings.renameTitle,
+    initialValue: currentName,
+    hint: RippleStrings.renameHint,
+  );
 }
 
-class _RenameDialogState extends State<_RenameDialog> {
-  late final TextEditingController _controller = TextEditingController(text: widget.currentName);
+class _TextPromptDialog extends StatefulWidget {
+  const _TextPromptDialog({required this.title, required this.initialValue, required this.hint});
+
+  final String title;
+  final String initialValue;
+  final String hint;
+
+  @override
+  State<_TextPromptDialog> createState() => _TextPromptDialogState();
+}
+
+class _TextPromptDialogState extends State<_TextPromptDialog> {
+  late final TextEditingController _controller = TextEditingController(text: widget.initialValue);
 
   @override
   void dispose() {
@@ -32,12 +48,12 @@ class _RenameDialogState extends State<_RenameDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text(RippleStrings.renameTitle),
+      title: Text(widget.title),
       content: TextField(
         controller: _controller,
         autofocus: true,
         textCapitalization: TextCapitalization.sentences,
-        decoration: const InputDecoration(hintText: RippleStrings.renameHint),
+        decoration: InputDecoration(hintText: widget.hint),
         onSubmitted: (_) => _submit(),
       ),
       actions: <Widget>[

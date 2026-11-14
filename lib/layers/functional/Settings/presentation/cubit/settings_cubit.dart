@@ -54,7 +54,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     emit(state.copyWith(integration: await _readSystemIntegration()));
   }
 
-  Future<void> setShowWallpaper(bool value) => _update(state.settings.copyWith(showWallpaper: value));
+  Future<void> setWallpaper(String wallpaperId) => _update(state.settings.copyWith(wallpaperId: wallpaperId));
 
   Future<void> setShowIcons(bool value) => _update(state.settings.copyWith(showIcons: value));
 

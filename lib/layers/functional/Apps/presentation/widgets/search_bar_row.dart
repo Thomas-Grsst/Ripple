@@ -11,6 +11,7 @@ class SearchBarRow extends StatelessWidget {
     required this.onChanged,
     required this.onSubmitted,
     required this.onOpenSettings,
+    required this.onOpenAllApps,
     super.key,
   });
 
@@ -19,11 +20,12 @@ class SearchBarRow extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final VoidCallback onSubmitted;
   final VoidCallback onOpenSettings;
+  final VoidCallback onOpenAllApps;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(RippleSpacing.md, RippleSpacing.sm, RippleSpacing.sm, RippleSpacing.md),
+      padding: const EdgeInsets.fromLTRB(RippleSpacing.md, RippleSpacing.sm, RippleSpacing.xs, RippleSpacing.md),
       child: Row(
         children: <Widget>[
           Expanded(
@@ -38,6 +40,7 @@ class SearchBarRow extends StatelessWidget {
               style: const TextStyle(color: RippleColors.textPrimary, fontSize: 16),
               decoration: InputDecoration(
                 hintText: RippleStrings.searchHint,
+                fillColor: RippleColors.surfaceRaised.withValues(alpha: 0.85),
                 prefixIcon: const Icon(Icons.search_rounded, color: RippleColors.textSecondary),
                 suffixIcon: ListenableBuilder(
                   listenable: controller,
@@ -56,6 +59,11 @@ class SearchBarRow extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+          IconButton(
+            tooltip: RippleStrings.openAllApps,
+            onPressed: onOpenAllApps,
+            icon: const Icon(Icons.apps_rounded, color: RippleColors.textSecondary),
           ),
           IconButton(
             tooltip: RippleStrings.settings,

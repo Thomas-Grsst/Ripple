@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripple/layers/functional/Apps/domain/entities/app_customization.dart';
+import 'package:ripple/layers/functional/Apps/domain/entities/app_group.dart';
 import 'package:ripple/layers/functional/Apps/domain/entities/installed_app.dart';
 import 'package:ripple/layers/functional/Apps/domain/entities/launcher_catalog.dart';
 import 'package:ripple/layers/functional/Apps/domain/entities/launcher_entry.dart';
@@ -89,6 +90,59 @@ void main() {
 
     test('returns nothing for a blank query', () {
       expect(const SearchLauncherEntries()(entries, '   '), isEmpty);
+    });
+  });
+
+  group('Groups', () {
+    test('groups list their visible apps alphabetically and skip hidden ones', () {
+      final AppCustomization customization = const AppCustomization()
+          .createGroup(id: 'xefi', name: ' XEFI ', packages: <String>['com.maps', 'com.agenda', 'com.music'])
+          .hide('com.music');
+
+      final LauncherCatalog catalog = const BuildLauncherCatalog()(
+        apps: apps,
+        customization: customization,
+        notificationCounts: const <String, int>{},
+      );
+
+      final LauncherGroup xefi = catalog.groups.single;
+      expect(xefi.group.name, 'XEFI');
+      expect(xefi.entries.map((LauncherEntry entry) => entry.packageName), <String>['com.agenda', 'com.maps']);
+      expect(customization.groups.single.contains('com.music'), isFalse);
+    });
+
+    test('an app can belong to several groups and be toggled out of one', () {
+      final AppCustomization customization = const AppCustomization()
+          .createGroup(id: 'a', name: 'Travail')
+          .createGroup(id: 'b', name: 'XEFI')
+          .toggleGroupMember('a', 'com.maps')
+          .toggleGroupMember('b', 'com.maps')
+          .toggleGroupMember('a', 'com.maps');
+
+      expect(customization.groups[0].packages, isEmpty);
+      expect(customization.groups[1].packages, <String>['com.maps']);
+    });
+
+    test('groups can be renamed, collapsed, reordered and deleted', () {
+      final AppCustomization customization = const AppCustomization()
+          .createGroup(id: 'a', name: 'Un')
+          .createGroup(id: 'b', name: 'Deux')
+          .renameGroup('a', 'Perso')
+          .toggleGroupExpanded('b')
+          .moveGroup(1, 0);
+
+      expect(customization.groups.map((AppGroup group) => group.name), <String>['Deux', 'Perso']);
+      expect(customization.groups.first.isExpanded, isFalse);
+      expect(customization.deleteGroup('a').groups.single.id, 'b');
+    });
+
+    test('the home is empty without favorites or groups', () {
+      final LauncherCatalog catalog = const BuildLauncherCatalog()(
+        apps: apps,
+        customization: const AppCustomization(),
+        notificationCounts: const <String, int>{},
+      );
+      expect(catalog.isHomeEmpty, isTrue);
     });
   });
 

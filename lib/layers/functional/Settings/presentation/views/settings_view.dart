@@ -4,12 +4,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../technical/Localization/ripple_strings.dart';
 import '../../../../technical/Theme/ripple_colors.dart';
 import '../../../../technical/Theme/ripple_theme.dart';
+import '../../../../technical/Wallpapers/ripple_wallpaper.dart';
 import '../cubit/settings_cubit.dart';
+import 'wallpaper_picker_view.dart';
 
 class SettingsView extends StatefulWidget {
-  const SettingsView({required this.onOpenFavoritesOrder, required this.onOpenHiddenApps, super.key});
+  const SettingsView({
+    required this.onOpenFavoritesOrder,
+    required this.onOpenGroups,
+    required this.onOpenHiddenApps,
+    super.key,
+  });
 
   final VoidCallback onOpenFavoritesOrder;
+  final VoidCallback onOpenGroups;
   final VoidCallback onOpenHiddenApps;
 
   @override
@@ -70,19 +78,15 @@ class _SettingsViewState extends State<SettingsView> {
                 onTap: cubit.openNotificationAccess,
               ),
               const _SectionTitle(RippleStrings.sectionHome),
-              SwitchListTile(
-                secondary: const Icon(Icons.wallpaper_rounded),
-                title: const Text(RippleStrings.showWallpaper),
-                subtitle: const Text(RippleStrings.showWallpaperHint),
-                value: state.settings.showWallpaper,
-                onChanged: cubit.setShowWallpaper,
-              ),
-              if (state.settings.showWallpaper)
-                ListTile(
-                  leading: const Icon(Icons.image_outlined),
-                  title: const Text(RippleStrings.changeWallpaper),
-                  onTap: cubit.openWallpaperPicker,
+              ListTile(
+                leading: const Icon(Icons.wallpaper_rounded),
+                title: const Text(RippleStrings.wallpaper),
+                subtitle: Text(RippleWallpaper.fromId(state.settings.wallpaperId).label),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const WallpaperPickerView()),
                 ),
+              ),
               SwitchListTile(
                 secondary: const Icon(Icons.apps_rounded),
                 title: const Text(RippleStrings.showIcons),
@@ -101,6 +105,12 @@ class _SettingsViewState extends State<SettingsView> {
                 title: const Text(RippleStrings.favoritesOrder),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: widget.onOpenFavoritesOrder,
+              ),
+              ListTile(
+                leading: const Icon(Icons.folder_outlined),
+                title: const Text(RippleStrings.groups),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: widget.onOpenGroups,
               ),
               ListTile(
                 leading: const Icon(Icons.visibility_off_outlined),

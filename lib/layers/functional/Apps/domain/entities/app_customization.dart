@@ -1,15 +1,19 @@
 import 'package:equatable/equatable.dart';
 
+import 'app_group.dart';
+
 class AppCustomization extends Equatable {
   const AppCustomization({
     this.favorites = const <String>[],
     this.hidden = const <String>{},
     this.renames = const <String, String>{},
+    this.groups = const <AppGroup>[],
   });
 
   final List<String> favorites;
   final Set<String> hidden;
   final Map<String, String> renames;
+  final List<AppGroup> groups;
 
   bool isFavorite(String packageName) => favorites.contains(packageName);
 
@@ -24,16 +28,16 @@ class AppCustomization extends Equatable {
   }
 
   AppCustomization moveFavorite(int oldIndex, int newIndex) {
-    final List<String> next = List<String>.of(favorites);
-    final String moved = next.removeAt(oldIndex);
-    next.insert(newIndex.clamp(0, next.length), moved);
-    return copyWith(favorites: List<String>.unmodifiable(next));
+    return copyWith(favorites: _move(favorites, oldIndex, newIndex));
   }
 
   AppCustomization hide(String packageName) {
     return copyWith(
       hidden: Set<String>.unmodifiable(<String>{...hidden, packageName}),
       favorites: List<String>.unmodifiable(favorites.where((String favorite) => favorite != packageName)),
+      groups: List<AppGroup>.unmodifiable(
+        groups.map((AppGroup group) => group.contains(packageName) ? group.toggleMember(packageName) : group),
+      ),
     );
   }
 
@@ -52,14 +56,56 @@ class AppCustomization extends Equatable {
     return copyWith(renames: Map<String, String>.unmodifiable(next));
   }
 
-  AppCustomization copyWith({List<String>? favorites, Set<String>? hidden, Map<String, String>? renames}) {
+  AppCustomization createGroup({required String id, required String name, List<String> packages = const <String>[]}) {
+    final AppGroup group = AppGroup(id: id, name: name.trim(), packages: List<String>.unmodifiable(packages));
+    return copyWith(groups: List<AppGroup>.unmodifiable(<AppGroup>[...groups, group]));
+  }
+
+  AppCustomization renameGroup(String groupId, String name) {
+    return _updateGroup(groupId, (AppGroup group) => group.copyWith(name: name.trim()));
+  }
+
+  AppCustomization deleteGroup(String groupId) {
+    return copyWith(groups: List<AppGroup>.unmodifiable(groups.where((AppGroup group) => group.id != groupId)));
+  }
+
+  AppCustomization toggleGroupMember(String groupId, String packageName) {
+    return _updateGroup(groupId, (AppGroup group) => group.toggleMember(packageName));
+  }
+
+  AppCustomization toggleGroupExpanded(String groupId) {
+    return _updateGroup(groupId, (AppGroup group) => group.copyWith(isExpanded: !group.isExpanded));
+  }
+
+  AppCustomization moveGroup(int oldIndex, int newIndex) => copyWith(groups: _move(groups, oldIndex, newIndex));
+
+  AppCustomization copyWith({
+    List<String>? favorites,
+    Set<String>? hidden,
+    Map<String, String>? renames,
+    List<AppGroup>? groups,
+  }) {
     return AppCustomization(
       favorites: favorites ?? this.favorites,
       hidden: hidden ?? this.hidden,
       renames: renames ?? this.renames,
+      groups: groups ?? this.groups,
     );
   }
 
+  AppCustomization _updateGroup(String groupId, AppGroup Function(AppGroup group) update) {
+    return copyWith(
+      groups: List<AppGroup>.unmodifiable(groups.map((AppGroup group) => group.id == groupId ? update(group) : group)),
+    );
+  }
+
+  static List<T> _move<T>(List<T> items, int oldIndex, int newIndex) {
+    final List<T> next = List<T>.of(items);
+    final T moved = next.removeAt(oldIndex);
+    next.insert(newIndex.clamp(0, next.length), moved);
+    return List<T>.unmodifiable(next);
+  }
+
   @override
-  List<Object?> get props => <Object?>[favorites, hidden, renames];
+  List<Object?> get props => <Object?>[favorites, hidden, renames, groups];
 }

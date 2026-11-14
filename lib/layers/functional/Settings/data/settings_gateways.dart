@@ -6,9 +6,11 @@ import '../domain/launcher_settings.dart';
 class PreferencesLauncherSettingsGateway implements LauncherSettingsGateway {
   const PreferencesLauncherSettingsGateway(this._preferences);
 
-  static const String _showWallpaperKey = 'settings.showWallpaper';
+  static const String _legacyShowWallpaperKey = 'settings.showWallpaper';
+  static const String _wallpaperKey = 'settings.wallpaper';
   static const String _showIconsKey = 'settings.showIcons';
   static const String _weatherCityKey = 'settings.weatherCity';
+  static const String _systemWallpaperId = 'system';
 
   final SharedPreferencesAsync _preferences;
 
@@ -16,15 +18,24 @@ class PreferencesLauncherSettingsGateway implements LauncherSettingsGateway {
   Future<LauncherSettings> load() async {
     const LauncherSettings defaults = LauncherSettings();
     return LauncherSettings(
-      showWallpaper: await _preferences.getBool(_showWallpaperKey) ?? defaults.showWallpaper,
+      wallpaperId: await _loadWallpaperId() ?? defaults.wallpaperId,
       showIcons: await _preferences.getBool(_showIconsKey) ?? defaults.showIcons,
       weatherCity: await _preferences.getString(_weatherCityKey) ?? defaults.weatherCity,
     );
   }
 
+  Future<String?> _loadWallpaperId() async {
+    final String? stored = await _preferences.getString(_wallpaperKey);
+    if (stored != null) {
+      return stored;
+    }
+    final bool? legacyShowWallpaper = await _preferences.getBool(_legacyShowWallpaperKey);
+    return legacyShowWallpaper == true ? _systemWallpaperId : null;
+  }
+
   @override
   Future<void> save(LauncherSettings settings) async {
-    await _preferences.setBool(_showWallpaperKey, settings.showWallpaper);
+    await _preferences.setString(_wallpaperKey, settings.wallpaperId);
     await _preferences.setBool(_showIconsKey, settings.showIcons);
     await _preferences.setString(_weatherCityKey, settings.weatherCity);
   }

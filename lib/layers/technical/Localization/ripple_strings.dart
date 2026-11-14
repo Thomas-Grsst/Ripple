@@ -8,6 +8,27 @@ abstract final class RippleStrings {
   static const String retry = 'Réessayer';
   static const String addFavoritesHint = 'Appui long sur une app pour l\'ajouter aux favoris';
 
+  static const String favorites = 'Favoris';
+  static const String emptyHomeTitle = 'Ton accueil est vide';
+  static const String emptyHomeBody = 'Ouvre « Toutes les apps », puis appui long sur une app pour l\'ajouter aux favoris ou à un groupe.';
+  static const String openAllApps = 'Toutes les apps';
+  static const String close = 'Fermer';
+  static const String addToGroup = 'Ajouter à un groupe';
+  static const String groups = 'Groupes';
+  static const String newGroup = 'Nouveau groupe';
+  static const String groupNameHint = 'XEFI';
+  static const String renameGroup = 'Renommer le groupe';
+  static const String editGroupApps = 'Choisir les apps';
+  static const String deleteGroup = 'Supprimer le groupe';
+  static const String deleteGroupConfirm = 'Les apps restent installées, seul le groupe disparaît.';
+  static const String delete = 'Supprimer';
+  static const String noGroups = 'Aucun groupe. Crée-en un pour ranger tes apps.';
+  static const String emptyGroup = 'Groupe vide — appui long pour ajouter des apps';
+  static const String filterApps = 'Filtrer les apps';
+  static const String wallpaper = 'Fond d\'écran';
+  static const String wallpaperBlack = 'Noir intégral';
+  static const String wallpaperSystem = 'Fond du téléphone';
+  static const String changeSystemWallpaper = 'Changer le fond du téléphone';
   static const String addToFavorites = 'Ajouter aux favoris';
   static const String removeFromFavorites = 'Retirer des favoris';
   static const String rename = 'Renommer';

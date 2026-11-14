@@ -1,4 +1,5 @@
 import '../entities/app_customization.dart';
+import '../entities/app_group.dart';
 import '../entities/installed_app.dart';
 import '../entities/label_normalizer.dart';
 import '../entities/launcher_catalog.dart';
@@ -28,8 +29,18 @@ class BuildLauncherCatalog {
     final List<LauncherEntry> visible = entries.where((LauncherEntry entry) => !entry.isHidden).toList(growable: false);
     final List<LauncherEntry> hidden = entries.where((LauncherEntry entry) => entry.isHidden).toList(growable: false);
 
+    final List<LauncherGroup> groups = customization.groups
+        .map(
+          (AppGroup group) => LauncherGroup(
+            group: group,
+            entries: visible.where((LauncherEntry entry) => group.contains(entry.packageName)).toList(growable: false),
+          ),
+        )
+        .toList(growable: false);
+
     return LauncherCatalog(
       favorites: favorites,
+      groups: groups,
       visible: visible,
       hidden: hidden,
       letterIndex: _indexLetters(visible),

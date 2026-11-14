@@ -1,22 +1,22 @@
 import 'package:equatable/equatable.dart';
 
 class LauncherSettings extends Equatable {
-  const LauncherSettings({this.showWallpaper = false, this.showIcons = true, this.weatherCity = ''});
+  const LauncherSettings({this.wallpaperId = 'black', this.showIcons = true, this.weatherCity = ''});
 
-  final bool showWallpaper;
+  final String wallpaperId;
   final bool showIcons;
   final String weatherCity;
 
-  LauncherSettings copyWith({bool? showWallpaper, bool? showIcons, String? weatherCity}) {
+  LauncherSettings copyWith({String? wallpaperId, bool? showIcons, String? weatherCity}) {
     return LauncherSettings(
-      showWallpaper: showWallpaper ?? this.showWallpaper,
+      wallpaperId: wallpaperId ?? this.wallpaperId,
       showIcons: showIcons ?? this.showIcons,
       weatherCity: weatherCity ?? this.weatherCity,
     );
   }
 
   @override
-  List<Object?> get props => <Object?>[showWallpaper, showIcons, weatherCity];
+  List<Object?> get props => <Object?>[wallpaperId, showIcons, weatherCity];
 }
 
 class SystemIntegrationStatus extends Equatable {

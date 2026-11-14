@@ -101,6 +101,31 @@ class LauncherCubit extends Cubit<LauncherState> {
 
   Future<void> rename(String packageName, String name) => _updateCustomization(state.customization.rename(packageName, name));
 
+  Future<void> createGroup(String name, {List<String> packages = const <String>[]}) {
+    if (name.trim().isEmpty) {
+      return Future<void>.value();
+    }
+    final String id = 'group-${DateTime.now().microsecondsSinceEpoch}';
+    return _updateCustomization(state.customization.createGroup(id: id, name: name, packages: packages));
+  }
+
+  Future<void> renameGroup(String groupId, String name) {
+    if (name.trim().isEmpty) {
+      return Future<void>.value();
+    }
+    return _updateCustomization(state.customization.renameGroup(groupId, name));
+  }
+
+  Future<void> deleteGroup(String groupId) => _updateCustomization(state.customization.deleteGroup(groupId));
+
+  Future<void> toggleGroupMember(String groupId, String packageName) {
+    return _updateCustomization(state.customization.toggleGroupMember(groupId, packageName));
+  }
+
+  Future<void> toggleGroupExpanded(String groupId) => _updateCustomization(state.customization.toggleGroupExpanded(groupId));
+
+  Future<void> moveGroup(int oldIndex, int newIndex) => _updateCustomization(state.customization.moveGroup(oldIndex, newIndex));
+
   Future<void> _updateCustomization(AppCustomization customization) async {
     _publish(customization: customization);
     await _saveAppCustomization(customization);

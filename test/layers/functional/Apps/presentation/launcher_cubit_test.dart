@@ -90,6 +90,18 @@ void main() {
     expect(customization.stored.favorites, <String>['com.maps']);
   });
 
+  test('creating a group with an app shows it on the home and persists it', () async {
+    await cubit.createGroup('XEFI', packages: <String>['com.agenda']);
+    expect(cubit.state.catalog.groups.single.group.name, 'XEFI');
+    expect(cubit.state.catalog.groups.single.entries.single.packageName, 'com.agenda');
+    expect(customization.stored.groups.single.packages, <String>['com.agenda']);
+  });
+
+  test('a blank group name is ignored', () async {
+    await cubit.createGroup('   ');
+    expect(cubit.state.customization.groups, isEmpty);
+  });
+
   test('submitting a search launches the best match and clears the query', () async {
     cubit.search('pla');
     await cubit.launchFirstResult();
